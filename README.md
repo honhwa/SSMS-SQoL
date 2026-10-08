@@ -88,6 +88,14 @@ If menus do not appear after an install, close SSMS completely and run once:
 
 If the package fails to load, SSMS names `%AppData%\Microsoft\SSMS\22.0_*\ActivityLog.xml` in its error; search it for `SsmsSqlHelper`. The add-in's own log is the *SQL Helper* pane of the Output window.
 
+## Team installer
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\build-release.ps1
+```
+
+Runs the tests, builds Release and writes `dist\SsmsSqlHelper-<version>.zip` (git-ignored). Give the zip to the team: unzip, close SSMS, double-click `Install.cmd` (it removes any previous version first, so it is also the updater; `Uninstall.cmd` removes it). The version comes from `source.extension.vsixmanifest`; bump it for each release. Per-user install, no administrator rights needed for the VSIX itself.
+
 ## Known uncertainties
 
 Not yet confirmed inside SSMS: the banner margin in query windows, `Query.Execute` hooking for the WHERE warning (the command name is logged if the lookup fails), Tab accepting soft-selected suggestions, and `ITextDocument.IsDirty` for query buffers (the backup tracker logs it if no document is found).
