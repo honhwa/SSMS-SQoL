@@ -1,0 +1,43 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net48</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Linked: the VSIX project can't be referenced from an SDK-style project, and these files have no VS dependencies -->
+    <Compile Include="..\..\src\SsmsSqlHelper\Snippets\Snippet.cs" Link="Linked\Snippet.cs" />
+    <Compile Include="..\..\src\SsmsSqlHelper\Snippets\SnippetExpander.cs" Link="Linked\SnippetExpander.cs" />
+    <Compile Include="..\..\src\SsmsSqlHelper\Metadata\ColumnInfo.cs" Link="Linked\ColumnInfo.cs" />
+    <Compile Include="..\..\src\SsmsSqlHelper\Metadata\DbMetadata.cs" Link="Linked\DbMetadata.cs" />
+    <Compile Include="..\..\src\SsmsSqlHelper\Metadata\SqlIdentifier.cs" Link="Linked\SqlIdentifier.cs" />
+    <Compile Include="..\..\src\SsmsSqlHelper\Metadata\TableInfo.cs" Link="Linked\TableInfo.cs" />
+    <Compile Include="..\..\src\SsmsSqlHelper\Parsing\SqlTokenizer.cs" Link="Linked\SqlTokenizer.cs" />
+    <Compile Include="..\..\src\SsmsSqlHelper\Parsing\SqlContext.cs" Link="Linked\SqlContext.cs" />
+    <Compile Include="..\..\src\SsmsSqlHelper\Generation\AliasGenerator.cs" Link="Linked\AliasGenerator.cs" />
+    <Compile Include="..\..\src\SsmsSqlHelper\Generation\SqlGenerator.cs" Link="Linked\SqlGenerator.cs" />
+    <Compile Include="..\..\src\SsmsSqlHelper\Generation\ContextExpander.cs" Link="Linked\ContextExpander.cs" />
+    <Compile Include="..\..\src\SsmsSqlHelper\Generation\JoinSuggester.cs" Link="Linked\JoinSuggester.cs" />
+    <Compile Include="..\..\src\SsmsSqlHelper\Metadata\ForeignKeyInfo.cs" Link="Linked\ForeignKeyInfo.cs" />
+    <Compile Include="..\..\src\SsmsSqlHelper\Snippets\SnippetFileFormat.cs" Link="Linked\SnippetFileFormat.cs" />
+    <Compile Include="..\..\src\SsmsSqlHelper\Settings\UserSettings.cs" Link="Linked\UserSettings.cs" />
+    <Compile Include="..\..\src\SsmsSqlHelper\Parsing\SqlContext.Columns.cs" Link="Linked\SqlContext.Columns.cs" />
+    <Compile Include="..\..\src\SsmsSqlHelper\Generation\ColumnSuggester.cs" Link="Linked\ColumnSuggester.cs" />
+    <Compile Include="..\..\src\SsmsSqlHelper\Snippets\SnippetTemplate.cs" Link="Linked\SnippetTemplate.cs" />
+    <Compile Include="..\..\src\SsmsSqlHelper\Parsing\UnsafeStatementChecker.cs" Link="Linked\UnsafeStatementChecker.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\src\SsmsSqlHelper\Snippets\DefaultSnippets.json" Link="DefaultSnippets.json" CopyToOutputDirectory="PreserveNewest" />
+    <Compile Include="..\..\src\SsmsSqlHelper\JsonText.cs" Link="Linked\JsonText.cs" />
+    <Compile Include="..\..\src\SsmsSqlHelper\Settings\ConnectionColors.cs" Link="Linked\ConnectionColors.cs" />
+    <Compile Include="..\..\src\SsmsSqlHelper\Parsing\SqlKeywords.cs" Link="Linked\SqlKeywords.cs" />
+    <Compile Include="..\..\src\SsmsSqlHelper\Parsing\SqlContext.Keywords.cs" Link="Linked\SqlContext.Keywords.cs" />
+    <Compile Include="..\..\src\SsmsSqlHelper\Backup\BackupStore.cs" Link="Linked\BackupStore.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System.Runtime.Serialization" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
+    <PackageReference Include="MSTest.TestAdapter" Version="3.6.4" />
+    <PackageReference Include="MSTest.TestFramework" Version="3.6.4" />
+  </ItemGroup>
+</Project>

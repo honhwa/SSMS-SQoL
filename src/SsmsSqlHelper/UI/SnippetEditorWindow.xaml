@@ -1,0 +1,131 @@
+<platformUI:DialogWindow
+    x:Class="SsmsSqlHelper.UI.SnippetEditorWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:platformUI="clr-namespace:Microsoft.VisualStudio.PlatformUI;assembly=Microsoft.VisualStudio.Shell.15.0"
+    Title="SQL Helper - Snippets and options"
+    Width="940" Height="860" MinWidth="760" MinHeight="680"
+    WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
+    FontFamily="Segoe UI" FontSize="12">
+
+  <Grid Margin="14">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="*" />
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="Auto" />
+    </Grid.RowDefinitions>
+
+    <Grid Grid.Row="0">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="290" />
+        <ColumnDefinition Width="14" />
+        <ColumnDefinition Width="*" />
+      </Grid.ColumnDefinitions>
+
+      <!-- Snippet list -->
+      <DockPanel Grid.Column="0">
+        <TextBlock DockPanel.Dock="Top" Text="Snippets" FontWeight="SemiBold" Margin="0,0,0,6" />
+        <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Margin="0,8,0,0">
+          <Button x:Name="AddButton" Content="Add" Click="Add_Click" Margin="0,0,6,0" />
+          <Button x:Name="DuplicateButton" Content="Duplicate" Click="Duplicate_Click" Margin="0,0,6,0" />
+          <Button x:Name="DeleteButton" Content="Delete" Click="Delete_Click" />
+        </StackPanel>
+        <ListBox x:Name="SnippetList" SelectionChanged="SnippetList_SelectionChanged" HorizontalContentAlignment="Stretch">
+          <ListBox.ItemTemplate>
+            <DataTemplate>
+              <StackPanel Margin="2,3">
+                <DockPanel>
+                  <TextBlock DockPanel.Dock="Right" Text="{Binding ProblemMark}" Foreground="#E0A030" ToolTip="{Binding Problem}" />
+                  <TextBlock Text="{Binding Shortcut}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                </DockPanel>
+                <TextBlock Text="{Binding Description}" Opacity="0.7" TextTrimming="CharacterEllipsis" />
+              </StackPanel>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+      </DockPanel>
+
+      <!-- Editor for the selected snippet -->
+      <Grid x:Name="EditPanel" Grid.Column="2">
+        <Grid.RowDefinitions>
+          <RowDefinition Height="Auto" />
+          <RowDefinition Height="Auto" />
+          <RowDefinition Height="Auto" />
+          <RowDefinition Height="*" />
+          <RowDefinition Height="Auto" />
+          <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0">
+          <TextBlock Text="Shortcut" FontWeight="SemiBold" Margin="0,0,0,4" />
+          <TextBox x:Name="ShortcutBox" Text="{Binding Shortcut, UpdateSourceTrigger=PropertyChanged}" Padding="4,3" FontFamily="Consolas" />
+          <TextBlock Text="Type this in a query window and press Tab. Letters, digits and underscores only." Opacity="0.7" Margin="0,4,0,0" />
+        </StackPanel>
+
+        <StackPanel Grid.Row="1" Margin="0,12,0,0">
+          <TextBlock Text="Description" FontWeight="SemiBold" Margin="0,0,0,4" />
+          <TextBox x:Name="DescriptionBox" Text="{Binding Description, UpdateSourceTrigger=PropertyChanged}" Padding="4,3" />
+          <TextBlock Text="Shown next to the shortcut in the suggestion list." Opacity="0.7" Margin="0,4,0,0" />
+        </StackPanel>
+
+        <DockPanel Grid.Row="2" Margin="0,12,0,4">
+          <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+            <Button Content="$CURSOR$" Click="InsertCursor_Click" Margin="0,0,6,0" Padding="10,3"
+                    ToolTip="Insert the marker that decides where the caret lands after the last tab stop" />
+            <Button Content="Tab stop" Click="InsertStop_Click" Margin="0,0,6,0" Padding="10,3"
+                    ToolTip="Insert a placeholder the caret visits with Tab, e.g. ${1:table}" />
+            <Button Content="$SELECTED$" Click="InsertSelected_Click" Padding="10,3"
+                    ToolTip="Insert the marker for the selected text (used by Tools > SQL Helper > Surround With Snippet)" />
+          </StackPanel>
+          <TextBlock Text="Body" FontWeight="SemiBold" VerticalAlignment="Center" />
+        </DockPanel>
+
+        <TextBox x:Name="BodyBox" Grid.Row="3" Text="{Binding Body, UpdateSourceTrigger=PropertyChanged}"
+                 AcceptsReturn="True" AcceptsTab="True" TextWrapping="NoWrap" FontFamily="Consolas" Padding="4,3"
+                 VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" />
+
+        <TextBlock Grid.Row="4" Margin="0,6,0,0" TextWrapping="Wrap" Opacity="0.7">
+          <Run Text="Write the SQL as it should appear; line breaks are kept and later lines are indented to match the line where the shortcut was typed." />
+          <LineBreak />
+          <Run Text="$CURSOR$ or $0: final caret position.  ${1:text} or $1: tab stops, Tab jumps to the next (same number = mirrored).  $SELECTED$: the selected text.  $DATE$ $TIME$ $DATETIME$ $USER$ $MACHINE$ $SERVER$ $DATABASE$ $CLIPBOARD$: filled in when used.  $$: a literal dollar sign." />
+        </TextBlock>
+
+        <TextBlock x:Name="ProblemText" Grid.Row="5" Margin="0,8,0,0" TextWrapping="Wrap" Foreground="#E0A030" Text="{Binding Problem}" />
+      </Grid>
+    </Grid>
+
+    <StackPanel Grid.Row="1" Margin="0,14,0,0">
+      <CheckBox x:Name="HintsCheck" Checked="Option_Changed" Unchecked="Option_Changed"
+                Content="Show a suggestion list while typing a shortcut (Ctrl+Space always shows all snippets)" />
+      <CheckBox x:Name="KeywordsCheck" Margin="0,5,0,0" Checked="Option_Changed" Unchecked="Option_Changed"
+                Content="Suggest SQL keywords (WHERE, GROUP BY, JOIN, ...) while typing; Ctrl+Space always shows them" />
+      <CheckBox x:Name="ColumnsCheck" Margin="0,5,0,0" Checked="Option_Changed" Unchecked="Option_Changed"
+                Content="Suggest column names while typing a query (after alias. and where an expression starts)" />
+      <CheckBox x:Name="AliasCheck" Margin="0,5,0,0" Checked="Option_Changed" Unchecked="Option_Changed"
+                Content="Add an alias (and the join condition after JOIN) when a table is picked or Tab is pressed after its name" />
+      <CheckBox x:Name="WarnCheck" Margin="0,5,0,0" Checked="Option_Changed" Unchecked="Option_Changed"
+                Content="Ask before running a script that has UPDATE or DELETE without WHERE" />
+      <CheckBox x:Name="BackupCheck" Margin="0,5,0,0" Checked="Option_Changed" Unchecked="Option_Changed"
+                Content="Back up unsaved query tabs every few seconds, so a crash or End Task does not lose them" />
+      <CheckBox x:Name="BannerCheck" Margin="0,5,0,0" Checked="Option_Changed" Unchecked="Option_Changed"
+                Content="Show the server and database name in a banner above each query window" />
+      <TextBlock Margin="22,6,0,3" Opacity="0.7" TextWrapping="Wrap"
+                 Text="Banner colours, one per line:  text to look for in the server or database name = colour (#RRGGBB or a name such as Red). The first line that matches wins; with * or ? it must match the whole name, or server/database." />
+      <TextBox x:Name="BannerRulesBox" Margin="22,0,0,0" Height="56" AcceptsReturn="True" FontFamily="Consolas" Padding="4,3"
+               VerticalScrollBarVisibility="Auto" TextChanged="BannerRules_TextChanged" />
+      <TextBlock x:Name="BannerProblemText" Margin="22,4,0,0" Foreground="#E0A030" TextWrapping="Wrap" />
+    </StackPanel>
+
+    <DockPanel Grid.Row="2" Margin="0,14,0,0" LastChildFill="False">
+      <StackPanel DockPanel.Dock="Left" Orientation="Horizontal">
+        <Button Content="Open JSON file" Click="OpenJson_Click" Margin="0,0,6,0" ToolTip="Close this window and edit snippets.json by hand" />
+        <Button Content="Reset snippets to defaults" Click="Reset_Click" />
+      </StackPanel>
+      <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+        <TextBlock x:Name="SummaryText" VerticalAlignment="Center" Margin="0,0,14,0" Foreground="#E0A030" />
+        <Button x:Name="SaveButton" Content="Save" IsDefault="True" Click="Save_Click" Margin="0,0,6,0" />
+        <Button Content="Cancel" IsCancel="True" />
+      </StackPanel>
+    </DockPanel>
+  </Grid>
+</platformUI:DialogWindow>

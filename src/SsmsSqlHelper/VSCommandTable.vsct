@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<CommandTable xmlns="http://schemas.microsoft.com/VisualStudio/2005-10-18/CommandTable" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <Extern href="stdidcmd.h" />
+  <Extern href="vsshlids.h" />
+
+  <Commands package="guidSsmsSqlHelperPackage">
+    <Menus>
+      <Menu guid="guidSsmsSqlHelperCmdSet" id="SqlHelperMenu" priority="0x0700" type="Menu">
+        <Parent guid="guidSsmsSqlHelperCmdSet" id="ToolsEntryGroup" />
+        <Strings>
+          <ButtonText>SQL Helper</ButtonText>
+          <CommandName>SQL Helper</CommandName>
+        </Strings>
+      </Menu>
+    </Menus>
+
+    <Groups>
+      <Group guid="guidSsmsSqlHelperCmdSet" id="ToolsEntryGroup" priority="0x0600">
+        <Parent guid="guidSHLMainMenu" id="IDM_VS_MENU_TOOLS" />
+      </Group>
+      <Group guid="guidSsmsSqlHelperCmdSet" id="ToolsMenuGroup" priority="0x0600">
+        <Parent guid="guidSsmsSqlHelperCmdSet" id="SqlHelperMenu" />
+      </Group>
+    </Groups>
+
+    <Buttons>
+      <Button guid="guidSsmsSqlHelperCmdSet" id="ShowConnectionCommandId" priority="0x0100" type="Button">
+        <Parent guid="guidSsmsSqlHelperCmdSet" id="ToolsMenuGroup" />
+        <Strings>
+          <ButtonText>Show Active Connection</ButtonText>
+        </Strings>
+      </Button>
+      <Button guid="guidSsmsSqlHelperCmdSet" id="EditSnippetsCommandId" priority="0x0200" type="Button">
+        <Parent guid="guidSsmsSqlHelperCmdSet" id="ToolsMenuGroup" />
+        <Strings>
+          <ButtonText>Edit Snippets</ButtonText>
+        </Strings>
+      </Button>
+      <Button guid="guidSsmsSqlHelperCmdSet" id="SurroundWithSnippetCommandId" priority="0x0220" type="Button">
+        <Parent guid="guidSsmsSqlHelperCmdSet" id="ToolsMenuGroup" />
+        <Strings>
+          <ButtonText>Surround With Snippet...</ButtonText>
+        </Strings>
+      </Button>
+      <Button guid="guidSsmsSqlHelperCmdSet" id="RecoverQueriesCommandId" priority="0x0230" type="Button">
+        <Parent guid="guidSsmsSqlHelperCmdSet" id="ToolsMenuGroup" />
+        <Strings>
+          <ButtonText>Recover Unsaved Queries...</ButtonText>
+        </Strings>
+      </Button>
+      <Button guid="guidSsmsSqlHelperCmdSet" id="RefreshMetadataCommandId" priority="0x0150" type="Button">
+        <Parent guid="guidSsmsSqlHelperCmdSet" id="ToolsMenuGroup" />
+        <Strings>
+          <ButtonText>Refresh Metadata</ButtonText>
+        </Strings>
+      </Button>
+    </Buttons>
+  </Commands>
+
+  <Symbols>
+    <GuidSymbol name="guidSsmsSqlHelperPackage" value="{a4c7e2b1-3d9f-4e6a-b8c5-7f1e0d2a9b34}" />
+    <GuidSymbol name="guidSsmsSqlHelperCmdSet" value="{c2e9a7d4-6b1f-4a3e-9d8c-5e0b7f2a1c68}">
+      <IDSymbol name="SqlHelperMenu" value="0x1010" />
+      <IDSymbol name="ToolsEntryGroup" value="0x1000" />
+      <IDSymbol name="ToolsMenuGroup" value="0x1020" />
+      <IDSymbol name="ShowConnectionCommandId" value="0x0100" />
+      <IDSymbol name="EditSnippetsCommandId" value="0x0200" />
+      <IDSymbol name="SurroundWithSnippetCommandId" value="0x0220" />
+      <IDSymbol name="RecoverQueriesCommandId" value="0x0230" />
+      <IDSymbol name="RefreshMetadataCommandId" value="0x0150" />
+    </GuidSymbol>
+  </Symbols>
+</CommandTable>

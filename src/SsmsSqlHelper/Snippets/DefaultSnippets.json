@@ -1,0 +1,19 @@
+{
+  "snippets": [
+    { "shortcut": "ssf",   "description": "SELECT * FROM",          "body": "SELECT * FROM $CURSOR$" },
+    { "shortcut": "st100", "description": "SELECT TOP 100 * FROM",  "body": "SELECT TOP 100 * FROM $CURSOR$" },
+    { "shortcut": "scf",   "description": "SELECT COUNT(*) FROM",   "body": "SELECT COUNT(*) FROM $CURSOR$" },
+    { "shortcut": "ii",    "description": "INSERT INTO",            "body": "INSERT INTO $CURSOR$" },
+    { "shortcut": "uu",    "description": "UPDATE ... SET ... WHERE", "body": "UPDATE $CURSOR$\nSET \nWHERE " },
+    { "shortcut": "df",    "description": "DELETE FROM ... WHERE",  "body": "DELETE FROM $CURSOR$\nWHERE " },
+    { "shortcut": "ij",    "description": "INNER JOIN ... ON",      "body": "INNER JOIN $CURSOR$ ON " },
+    { "shortcut": "lj",    "description": "LEFT JOIN ... ON",       "body": "LEFT JOIN $CURSOR$ ON " },
+    { "shortcut": "ob",    "description": "ORDER BY",               "body": "ORDER BY $CURSOR$" },
+    { "shortcut": "gb",    "description": "GROUP BY",               "body": "GROUP BY $CURSOR$" },
+    { "shortcut": "cte",   "description": "Common table expression", "body": ";WITH cte AS (\n    $CURSOR$\n)\nSELECT * FROM cte" },
+    { "shortcut": "bt",    "description": "Wrap in a transaction (rolled back until you switch it)", "body": "BEGIN TRANSACTION\n\n$SELECTED$$CURSOR$\n\nROLLBACK TRANSACTION\n-- COMMIT TRANSACTION" },
+    { "shortcut": "tc",    "description": "Wrap in TRY / CATCH",    "body": "BEGIN TRY\n$SELECTED$$CURSOR$\nEND TRY\nBEGIN CATCH\n    THROW;\nEND CATCH" },
+    { "shortcut": "ct",    "description": "CREATE TABLE (Tab moves between the placeholders)", "body": "CREATE TABLE ${1:dbo.TableName}\n(\n    Id int IDENTITY(1, 1) NOT NULL PRIMARY KEY,\n    ${2:Name} ${3:nvarchar(100)} NOT NULL$0\n)" },
+    { "shortcut": "hdr",   "description": "Header comment with your name and today's date", "body": "-- Author:      $USER$\n-- Created:     $DATE$\n-- Description: ${1:what this script does}\n$0" }
+  ]
+}
