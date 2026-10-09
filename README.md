@@ -1,3 +1,5 @@
+<img width="1774" height="887" alt="ssms-sqol-logo" src="https://github.com/user-attachments/assets/19c5b612-62b6-474c-bc02-b4f8cb55f343" />
+
 # SQL Helper for SSMS 22
 
 SQL Helper is a VSIX extension for **SQL Server Management Studio 22**. It adds SQL completion, snippets, object navigation, connection awareness, and recovery for unsaved query tabs.
