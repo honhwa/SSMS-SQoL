@@ -44,6 +44,7 @@ namespace SsmsSqlHelper.Editor
         private List<KeywordSuggestion> _suggestions;
         private bool _lowercase;
         private bool _leadingSpace;
+        private string _typedWord;
 
         public CompletionStartData InitializeCompletion(CompletionTrigger trigger, SnapshotPoint triggerLocation, CancellationToken token)
         {
@@ -72,6 +73,7 @@ namespace SsmsSqlHelper.Editor
                 return CompletionStartData.DoesNotParticipateInCompletion;
 
             _suggestions = context.Suggestions;
+            _typedWord = word;
             _lowercase = word.Length > 0 && word.Any(char.IsLetter) ? word == word.ToLowerInvariant() : SqlContext.PrefersLowercaseKeywords(window.Text, position);
 
             // Right behind a closing bracket or a name there is no space to separate the keyword from it
@@ -90,6 +92,7 @@ namespace SsmsSqlHelper.Editor
 
             var lowercase = _lowercase;
             var leadingSpace = _leadingSpace;
+            var typedWord = _typedWord;
             var items = suggestions.Select((s, i) =>
             {
                 var insert = lowercase ? s.InsertText.ToLowerInvariant() : s.InsertText;
@@ -102,7 +105,7 @@ namespace SsmsSqlHelper.Editor
                     filters: ImmutableArray<CompletionFilter>.Empty,
                     suffix: function?.Syntax ?? s.Description,
                     insertText: (leadingSpace ? " " : "") + insert,
-                    sortText: "0" + i.ToString("D3"),
+                    sortText: CompletionSortOrder.Keyword(s.Text, typedWord, i),
                     filterText: s.Text,
                     attributeIcons: ImmutableArray<ImageElement>.Empty);
                 item.Properties.AddProperty(KeywordKey, s);

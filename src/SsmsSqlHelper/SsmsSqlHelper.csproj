@@ -60,6 +60,7 @@
     <Compile Include="Diagnostics\StatusBar.cs" />
     <Compile Include="Editor\EditorContext.cs" />
     <Compile Include="Editor\CompletionLauncher.cs" />
+    <Compile Include="Editor\CompletionSortOrder.cs" />
     <Compile Include="Editor\ColumnCompletionSource.cs" />
     <Compile Include="Editor\ConnectionBannerMargin.cs" />
     <Compile Include="Editor\BracketColorTagger.cs" />

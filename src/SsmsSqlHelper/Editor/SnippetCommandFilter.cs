@@ -89,6 +89,17 @@ namespace SsmsSqlHelper.Editor
 
                     case VSConstants.VSStd2KCmdID.TYPECHAR:
                         var character = pvaIn == IntPtr.Zero ? '\0' : (char)(ushort)Marshal.GetObjectForNativeVariant(pvaIn);
+                        if (char.IsLetter(character) && IsCompletionActive() && AtEmptyColumnAndKeywordPosition())
+                        {
+                            // Items from a session opened at an empty caret keep their old sort keys.
+                            // Start a session for the first typed letter so matching keywords/functions rise above columns.
+                            _completionBroker.DismissAllSessions(_view);
+                            _asyncCompletionBroker.GetSession(_view)?.Dismiss();
+                            var typed = Next.Exec(ref pguidCmdGroup, nCmdID, nCmdexecopt, pvaIn, pvaOut);
+                            if (ErrorHandler.Succeeded(typed))
+                                CompletionLauncher.ShowIfApplicableSoon(_asyncCompletionBroker, _view);
+                            return typed;
+                        }
                         if (character == '(' || character == ',' || character == ')')
                         {
                             var typed = Next.Exec(ref pguidCmdGroup, nCmdID, nCmdexecopt, pvaIn, pvaOut);
@@ -149,6 +160,16 @@ namespace SsmsSqlHelper.Editor
             }
 
             return Next.Exec(ref pguidCmdGroup, nCmdID, nCmdexecopt, pvaIn, pvaOut);
+        }
+
+        private bool AtEmptyColumnAndKeywordPosition()
+        {
+            var caret = _view.Caret.Position.BufferPosition;
+            var window = TextWindow.Around(caret.Snapshot, caret.Position, WindowBefore, WindowAfter);
+            var position = caret.Position - window.Start;
+            return SqlContext.TryGetKeywordContext(window.Text, position, out var keywords) &&
+                   keywords.Start == position && keywords.End == position &&
+                   SqlContext.TryGetColumnContext(window.Text, position, out _);
         }
 
         private void ShowFunctionSignature()

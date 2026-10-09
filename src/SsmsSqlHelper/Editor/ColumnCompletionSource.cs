@@ -100,7 +100,7 @@ namespace SsmsSqlHelper.Editor
                     filters: ImmutableArray<CompletionFilter>.Empty,
                     suffix: c.DisplayType + (qualify ? "  " + s.Qualifier : ""),
                     insertText: s.InsertText,
-                    sortText: s.TableOrder.ToString("D2") + c.Ordinal.ToString("D5"),
+                    sortText: CompletionSortOrder.Column(s.TableOrder, c.Ordinal),
                     filterText: c.Name,
                     attributeIcons: ImmutableArray<ImageElement>.Empty);
                 item.Properties.AddProperty(SuggestionKey, s);
