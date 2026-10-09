@@ -54,16 +54,21 @@
     <Compile Include="Commands\RefreshMetadataCommand.cs" />
     <Compile Include="Commands\SurroundWithSnippetCommand.cs" />
     <Compile Include="Commands\ShowConnectionCommand.cs" />
+    <Compile Include="Commands\CheckForUpdatesCommand.cs" />
+    <Compile Include="Updates\ReleaseChecker.cs" />
     <Compile Include="Diagnostics\Log.cs" />
     <Compile Include="Diagnostics\StatusBar.cs" />
     <Compile Include="Editor\EditorContext.cs" />
     <Compile Include="Editor\CompletionLauncher.cs" />
     <Compile Include="Editor\ColumnCompletionSource.cs" />
     <Compile Include="Editor\ConnectionBannerMargin.cs" />
+    <Compile Include="Editor\BracketColorTagger.cs" />
     <Compile Include="Editor\ActiveEditor.cs" />
     <Compile Include="Editor\JoinConditionCompletionSource.cs" />
     <Compile Include="Editor\KeywordCommitManager.cs" />
     <Compile Include="Editor\KeywordCompletionSource.cs" />
+    <Compile Include="Editor\SqlFunctionSignatureHelp.cs" />
+    <Compile Include="Editor\ProcedureCompletionSource.cs" />
     <Compile Include="Editor\SnippetCommitManager.cs" />
     <Compile Include="Editor\SnippetCompletionSource.cs" />
     <Compile Include="Editor\SnippetInserter.cs" />
@@ -74,12 +79,15 @@
     <Compile Include="Generation\ColumnSuggester.cs" />
     <Compile Include="Generation\ContextExpander.cs" />
     <Compile Include="Generation\JoinSuggester.cs" />
+    <Compile Include="Generation\ProcedureAlterScript.cs" />
     <Compile Include="Generation\SqlGenerator.cs" />
     <Compile Include="Editor\SnippetCommandFilter.cs" />
     <Compile Include="Editor\SnippetFilterProvider.cs" />
     <Compile Include="Metadata\ColumnInfo.cs" />
     <Compile Include="Metadata\DbMetadata.cs" />
     <Compile Include="Metadata\ForeignKeyInfo.cs" />
+    <Compile Include="Metadata\ProcedureInfo.cs" />
+    <Compile Include="Metadata\SchemaObjectInfo.cs" />
     <Compile Include="Metadata\MetadataLoader.cs" />
     <Compile Include="Metadata\MetadataService.cs" />
     <Compile Include="Metadata\SqlIdentifier.cs" />
@@ -102,10 +110,18 @@
     <Compile Include="Parsing\SqlContext.Columns.cs" />
     <Compile Include="Parsing\SqlContext.Keywords.cs" />
     <Compile Include="Parsing\SqlKeywords.cs" />
+    <Compile Include="Parsing\SqlFunctionSignatures.cs" />
+    <Compile Include="Parsing\SqlFunctionCall.cs" />
     <Compile Include="Parsing\SqlTokenizer.cs" />
+    <Compile Include="Parsing\BracketColorizer.cs" />
     <Compile Include="Parsing\UnsafeStatementChecker.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Ssms\ActiveConnection.cs" />
+    <Compile Include="Ssms\ObjectExplorerNavigator.cs" />
+    <Compile Include="Ssms\ProcedureAlterEditor.cs" />
+    <Compile Include="Ssms\ServerNameMatcher.cs" />
+    <Compile Include="Ssms\SchemaObjectResolver.cs" />
+    <Compile Include="Ssms\SchemaObjectEditor.cs" />
     <Compile Include="Ssms\SsmsConnectionAdapter.cs" />
     <Compile Include="Snippets\Snippet.cs" />
     <Compile Include="Snippets\SnippetFileFormat.cs" />
@@ -142,6 +158,7 @@
     <Reference Include="System.ComponentModel.Composition" />
     <Reference Include="System.Design" />
     <Reference Include="System.Runtime.Serialization" />
+    <Reference Include="System.Net.Http" />
     <Reference Include="System.Xaml" />
     <Reference Include="System.Xml" />
     <Reference Include="System.Data" />
@@ -168,6 +185,10 @@
     </Reference>
     <Reference Include="Microsoft.SqlServer.ConnectionInfo">
       <HintPath>$(SsmsIdeDir)\Microsoft.SqlServer.ConnectionInfo.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Microsoft.SqlServer.Management.Sdk.Sfc">
+      <HintPath>$(SsmsIdeDir)\Microsoft.SqlServer.Management.Sdk.Sfc.dll</HintPath>
       <Private>False</Private>
     </Reference>
   </ItemGroup>

@@ -58,6 +58,11 @@ namespace SsmsSqlHelper.Snippets
             return new SnippetExpansion(wordStart, shortcut.Length, rendered.Text, rendered.CaretOffset, rendered.Stops, rendered.FinalOffset);
         }
 
+        /// <summary>Whether a fully typed shortcut should take Tab ahead of an open completion list.</summary>
+        public static bool HasExactShortcut(string lineTextBeforeCaret, Func<string, Snippet> lookup) =>
+            TryFindShortcut(lineTextBeforeCaret, allowEmpty: false, out var wordStart) &&
+            lookup(lineTextBeforeCaret.Substring(wordStart)) != null;
+
         /// <summary>
         /// Finds where the shortcut being typed starts, if a snippet may be expanded at the caret at all: the word
         /// must start at a boundary and must not sit inside a string literal, a comment or a qualified name.

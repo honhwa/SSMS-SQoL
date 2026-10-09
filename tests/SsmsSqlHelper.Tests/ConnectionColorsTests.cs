@@ -10,6 +10,17 @@ namespace SsmsSqlHelper.Tests
     {
         private static ConnectionColorRule R(string match, string color) => new ConnectionColorRule { Match = match, Color = color };
 
+        [TestMethod]
+        public void FreshInstallUsesRequestedProductionRule()
+        {
+            var rule = new UserSettings().ConnectionColors.Single();
+            Assert.AreEqual("*prod*", rule.Match);
+            Assert.AreEqual("#FF6363", rule.Color);
+            Assert.AreEqual("#FF6363", ConnectionColors.Resolve(new[] { rule }, "PJM-Prod-SQL", "db"));
+            Assert.IsNull(ConnectionColors.Resolve(new[] { rule }, "PJM-Dev-SQL", "db"));
+            Assert.AreEqual("*prod* = #FF6363", ConnectionColors.Format(new[] { rule }));
+        }
+
         // ---- matching ----
 
         [DataTestMethod]
@@ -128,6 +139,7 @@ namespace SsmsSqlHelper.Tests
             Assert.IsFalse(settings.AutoAlias);
             Assert.IsTrue(settings.ShowConnectionBanner);
             Assert.AreEqual("prod", settings.ConnectionColors.Single().Match);
+            Assert.AreEqual("#B71C1C", settings.ConnectionColors.Single().Color);
         }
     }
 }

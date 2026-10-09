@@ -39,6 +39,16 @@ namespace SsmsSqlHelper.Tests
         }
 
         [TestMethod]
+        public void ExactShortcutTakesTabInsideExistsButPartialWordDoesNot()
+        {
+            Snippet Lookup(string shortcut) => Snippets.TryGetValue(shortcut, out var snippet) ? snippet : null;
+            Assert.IsTrue(SnippetExpander.HasExactShortcut("    ssf", Lookup));
+            Assert.IsFalse(SnippetExpander.HasExactShortcut("    ss", Lookup));
+            Assert.IsFalse(SnippetExpander.HasExactShortcut("    Budget", Lookup));
+            Assert.IsFalse(SnippetExpander.HasExactShortcut("    dbo.ssf", Lookup));
+        }
+
+        [TestMethod]
         public void CaretGoesToEndWithoutMarker()
         {
             var e = Expand("ob");

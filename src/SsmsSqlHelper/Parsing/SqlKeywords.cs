@@ -26,6 +26,12 @@ namespace SsmsSqlHelper.Parsing
     {
         private static KeywordSuggestion K(string text, string description, string insert = null) => new KeywordSuggestion(text, description, insert);
 
+        private static KeywordSuggestion F(string name)
+        {
+            var signature = SqlFunctionSignatures.Find(name);
+            return K(name + "(", signature.Syntax + " — " + signature.Description, name + "(");
+        }
+
         // ---- single entries ----
         private static KeywordSuggestion Where => K("WHERE", "Keep only the rows that match a condition");
         private static KeywordSuggestion GroupBy => K("GROUP BY", "Combine rows with the same values");
@@ -70,15 +76,37 @@ namespace SsmsSqlHelper.Parsing
             K("USE", "Switch database"),
         };
 
-        public static List<KeywordSuggestion> SelectStart() => new List<KeywordSuggestion>
+        public static List<KeywordSuggestion> SelectStart()
         {
-            K("DISTINCT", "Remove duplicate rows"),
-            K("TOP", "Return only the first rows"),
-            K("ALL", "Keep duplicate rows (the default)"),
-            K("CASE", "Choose a value by condition"),
-        };
+            var list = new List<KeywordSuggestion>
+            {
+                K("DISTINCT", "Remove duplicate rows"),
+                K("TOP", "Return only the first rows"),
+                K("ALL", "Keep duplicate rows (the default)"),
+                K("CASE", "Choose a value by condition"),
+            };
+            list.AddRange(SelectFunctions());
+            return list;
+        }
 
-        public static List<KeywordSuggestion> AfterDistinct() => new List<KeywordSuggestion> { K("TOP", "Return only the first rows"), K("CASE", "Choose a value by condition") };
+        public static List<KeywordSuggestion> AfterDistinct()
+        {
+            var list = new List<KeywordSuggestion> { K("TOP", "Return only the first rows"), K("CASE", "Choose a value by condition") };
+            list.AddRange(SelectFunctions());
+            return list;
+        }
+
+        public static List<KeywordSuggestion> SelectFunctions() => new List<KeywordSuggestion>
+        {
+            K("GETDATE()", "Current date and time", "GETDATE()"),
+            K("GETUTCDATE()", "Current UTC date and time", "GETUTCDATE()"),
+            K("SYSDATETIME()", "Current date and time with higher precision", "SYSDATETIME()"),
+            K("NEWID()", "New uniqueidentifier", "NEWID()"),
+            F("ISNULL"), F("COALESCE"), F("NULLIF"), F("IIF"),
+            F("CAST"), F("TRY_CAST"), F("CONVERT"), F("TRY_CONVERT"),
+            F("COUNT"), F("SUM"), F("AVG"), F("DATEADD"), F("DATEDIFF"),
+            F("SUBSTRING"), F("LEN"), F("CONCAT"), F("ROUND"),
+        };
 
         public static List<KeywordSuggestion> AfterSelectItem() => new List<KeywordSuggestion> { From, As };
 

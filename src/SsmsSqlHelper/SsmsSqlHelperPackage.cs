@@ -1,5 +1,6 @@
 using System;
 using System.Runtime.InteropServices;
+using System.Reflection;
 using System.Threading;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Shell;
@@ -20,7 +21,10 @@ namespace SsmsSqlHelper
         {
             await JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
 
-            Log.Info($"Package loaded (v{typeof(SsmsSqlHelperPackage).Assembly.GetName().Version})");
+            var version = typeof(SsmsSqlHelperPackage).Assembly
+                .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ??
+                typeof(SsmsSqlHelperPackage).Assembly.GetName().Version.ToString();
+            Log.Info($"Package loaded (v{version})");
 
             // Tell the user when the cache followed a schema change on its own
             MetadataService.Instance.SchemaReloaded += metadata =>
@@ -36,6 +40,7 @@ namespace SsmsSqlHelper
             await SurroundWithSnippetCommand.InitializeAsync(this);
             await ExecuteGuard.InitializeAsync(this);
             await RecoverQueriesCommand.InitializeAsync(this);
+            await CheckForUpdatesCommand.InitializeAsync(this);
         }
     }
 }

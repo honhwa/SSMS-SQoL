@@ -30,6 +30,27 @@ namespace SsmsSqlHelper.Parsing
             "INNER", "LEFT", "RIGHT", "FULL", "OUTER", "CROSS",
         };
 
+        private static readonly HashSet<string> CompletionContextWords = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "WHERE", "ON", "HAVING", "AND", "OR", "NOT", "IS", "IN", "LIKE", "BETWEEN",
+            "WHEN", "THEN", "ELSE", "GROUP", "ORDER", "BY",
+        };
+
+        /// <summary>Whether a just-typed space completed a word that changes the next completion list.</summary>
+        public static bool ShouldRefreshCompletionAfterSpace(string text, int caret)
+        {
+            if (text == null || caret < 2 || caret > text.Length || text[caret - 1] != ' ')
+                return false;
+
+            var tokens = Significant(SqlTokenizer.Tokenize(text.Substring(0, caret)));
+            if (tokens.Count == 0 || tokens[tokens.Count - 1].Kind != TokenKind.Word ||
+                !CompletionContextWords.Contains(tokens[tokens.Count - 1].Text))
+                return false;
+
+            return TryGetKeywordContext(text, caret, out var context) &&
+                   context.Start == caret && context.End == caret;
+        }
+
         // Words that are not themselves a value, so something that needs a value cannot end on them
         private static readonly HashSet<string> NotValueWords = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
@@ -91,7 +112,16 @@ namespace SsmsSqlHelper.Parsing
             var prev = wordIdx - 1;
             var scopeStart = FindScopeStart(sig, start, out var keyword, out var open);
             if (open.Count > 0)
-                return false;           // inside a function call or a list: not for keywords
+            {
+                // Expressions inside a function can start with another function. Keep the
+                // function list alongside column completion, including for nested calls.
+                if (!SqlFunctionCallParser.TryFindActive(text, start, out var function) ||
+                    ((function.Signature.Name == "CAST" || function.Signature.Name == "TRY_CAST") && function.ArgumentIndex > 0))
+                    return false;
+
+                context = new KeywordContext { Start = start, End = end, Suggestions = SqlKeywords.SelectFunctions() };
+                return true;
+            }
 
             // GO on a line of its own ends the batch
             for (var i = prev; i >= scopeStart; i--)
@@ -342,6 +372,9 @@ namespace SsmsSqlHelper.Parsing
             var last = items[items.Count - 1];
             if (items.Count == 1 && (last.IsKeyword("DISTINCT") || last.IsKeyword("ALL")))
                 return SqlKeywords.AfterDistinct();
+
+            if (last.IsSymbol(','))
+                return SqlKeywords.SelectFunctions();
 
             // SELECT TOP 10 | : still waiting for the first column
             var topAt = items.FindIndex(t => t.IsKeyword("TOP"));

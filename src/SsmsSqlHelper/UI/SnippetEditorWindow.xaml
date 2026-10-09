@@ -94,27 +94,61 @@
       </Grid>
     </Grid>
 
-    <StackPanel Grid.Row="1" Margin="0,14,0,0">
-      <CheckBox x:Name="HintsCheck" Checked="Option_Changed" Unchecked="Option_Changed"
-                Content="Show a suggestion list while typing a shortcut (Ctrl+Space always shows all snippets)" />
-      <CheckBox x:Name="KeywordsCheck" Margin="0,5,0,0" Checked="Option_Changed" Unchecked="Option_Changed"
-                Content="Suggest SQL keywords (WHERE, GROUP BY, JOIN, ...) while typing; Ctrl+Space always shows them" />
-      <CheckBox x:Name="ColumnsCheck" Margin="0,5,0,0" Checked="Option_Changed" Unchecked="Option_Changed"
-                Content="Suggest column names while typing a query (after alias. and where an expression starts)" />
-      <CheckBox x:Name="AliasCheck" Margin="0,5,0,0" Checked="Option_Changed" Unchecked="Option_Changed"
-                Content="Add an alias (and the join condition after JOIN) when a table is picked or Tab is pressed after its name" />
-      <CheckBox x:Name="WarnCheck" Margin="0,5,0,0" Checked="Option_Changed" Unchecked="Option_Changed"
-                Content="Ask before running a script that has UPDATE or DELETE without WHERE" />
-      <CheckBox x:Name="BackupCheck" Margin="0,5,0,0" Checked="Option_Changed" Unchecked="Option_Changed"
-                Content="Back up unsaved query tabs every few seconds, so a crash or End Task does not lose them" />
-      <CheckBox x:Name="BannerCheck" Margin="0,5,0,0" Checked="Option_Changed" Unchecked="Option_Changed"
-                Content="Show the server and database name in a banner above each query window" />
-      <TextBlock Margin="22,6,0,3" Opacity="0.7" TextWrapping="Wrap"
-                 Text="Banner colours, one per line:  text to look for in the server or database name = colour (#RRGGBB or a name such as Red). The first line that matches wins; with * or ? it must match the whole name, or server/database." />
-      <TextBox x:Name="BannerRulesBox" Margin="22,0,0,0" Height="56" AcceptsReturn="True" FontFamily="Consolas" Padding="4,3"
-               VerticalScrollBarVisibility="Auto" TextChanged="BannerRules_TextChanged" />
-      <TextBlock x:Name="BannerProblemText" Margin="22,4,0,0" Foreground="#E0A030" TextWrapping="Wrap" />
-    </StackPanel>
+    <Grid Grid.Row="1" Margin="0,14,0,0">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="*" />
+        <ColumnDefinition Width="12" />
+        <ColumnDefinition Width="*" />
+      </Grid.ColumnDefinitions>
+
+      <GroupBox Grid.Column="0" Header="Suggestions and editing" Padding="10,8">
+        <StackPanel>
+          <CheckBox x:Name="HintsCheck" Content="Snippet shortcuts" Checked="Option_Changed" Unchecked="Option_Changed" />
+          <TextBlock Margin="22,2,0,8" FontSize="11" Opacity="0.7" TextWrapping="Wrap"
+                     Text="Show matching snippets while typing. Ctrl+Space can always show them." />
+
+          <CheckBox x:Name="KeywordsCheck" Content="SQL keywords and functions" Checked="Option_Changed" Unchecked="Option_Changed" />
+          <TextBlock Margin="22,2,0,8" FontSize="11" Opacity="0.7" TextWrapping="Wrap"
+                     Text="Suggest WHERE, JOIN, GETDATE(), ISNULL() and other SQL words." />
+
+          <CheckBox x:Name="ColumnsCheck" Content="Column names" Checked="Option_Changed" Unchecked="Option_Changed" />
+          <TextBlock Margin="22,2,0,8" FontSize="11" Opacity="0.7" TextWrapping="Wrap"
+                     Text="Suggest columns in SELECT, WHERE and after a table alias." />
+
+          <CheckBox x:Name="AliasCheck" Content="Automatic table aliases" Checked="Option_Changed" Unchecked="Option_Changed" />
+          <TextBlock Margin="22,2,0,0" FontSize="11" Opacity="0.7" TextWrapping="Wrap"
+                     Text="Add aliases and JOIN conditions when a table is selected." />
+        </StackPanel>
+      </GroupBox>
+
+      <StackPanel Grid.Column="2">
+        <GroupBox Header="Safety and recovery" Padding="10,8">
+          <StackPanel>
+            <CheckBox x:Name="WarnCheck" Content="Warn before UPDATE or DELETE without WHERE"
+                      Checked="Option_Changed" Unchecked="Option_Changed" />
+            <TextBlock Margin="22,2,0,8" FontSize="11" Opacity="0.7" TextWrapping="Wrap"
+                       Text="Ask for confirmation before running these statements." />
+
+            <CheckBox x:Name="BackupCheck" Content="Back up unsaved query tabs"
+                      Checked="Option_Changed" Unchecked="Option_Changed" />
+            <TextBlock Margin="22,2,0,0" FontSize="11" Opacity="0.7" TextWrapping="Wrap"
+                       Text="Keep recovery copies in case SSMS closes unexpectedly." />
+          </StackPanel>
+        </GroupBox>
+
+        <GroupBox Header="Connection banner" Padding="10,8" Margin="0,8,0,0">
+          <StackPanel>
+            <CheckBox x:Name="BannerCheck" Content="Show server and database above queries"
+                      Checked="Option_Changed" Unchecked="Option_Changed" />
+            <TextBlock Margin="22,5,0,4" FontSize="11" Opacity="0.7" TextWrapping="Wrap"
+                       Text="Colour rules: server or database text = colour. One rule per line; the first match wins." />
+            <TextBox x:Name="BannerRulesBox" Margin="22,0,0,0" Height="56" AcceptsReturn="True" FontFamily="Consolas" Padding="4,3"
+                     VerticalScrollBarVisibility="Auto" TextChanged="BannerRules_TextChanged" />
+            <TextBlock x:Name="BannerProblemText" Margin="22,4,0,0" Foreground="#E0A030" TextWrapping="Wrap" />
+          </StackPanel>
+        </GroupBox>
+      </StackPanel>
+    </Grid>
 
     <DockPanel Grid.Row="2" Margin="0,14,0,0" LastChildFill="False">
       <StackPanel DockPanel.Dock="Left" Orientation="Horizontal">

@@ -22,6 +22,52 @@ namespace SsmsSqlHelper.Generation
     {
         private const string Unit = "    ";
 
+        /// <summary>Completes an EXEC statement with named parameters and editable values.</summary>
+        public static GeneratedText ExecuteBody(ProcedureInfo procedure, string command, string indent, string newLine)
+        {
+            if (procedure.Parameters.Count == 0)
+                return null;
+
+            var sb = new StringBuilder();
+            var needsVariables = procedure.Parameters.Any(p => p.IsOutput || p.IsReadOnly);
+            var bodyIndent = needsVariables ? indent + Unit : indent;
+            if (needsVariables)
+            {
+                // A block keeps DECLARE and EXEC together when the command is the body of IF or WHILE.
+                sb.Append("BEGIN").Append(newLine).Append(bodyIndent);
+                foreach (var parameter in procedure.Parameters.Where(p => p.IsOutput || p.IsReadOnly))
+                    sb.Append("DECLARE ").Append(ProcedureVariable(parameter)).Append(' ')
+                      .Append(parameter.DisplayType).Append(';').Append(newLine).Append(bodyIndent);
+            }
+
+            sb.Append(command);
+            var caret = -1;
+            for (var i = 0; i < procedure.Parameters.Count; i++)
+            {
+                var parameter = procedure.Parameters[i];
+                sb.Append(i == 0 ? newLine : "," + newLine).Append(bodyIndent).Append(Unit)
+                  .Append(parameter.Name).Append(" = ");
+                if (parameter.IsOutput || parameter.IsReadOnly)
+                {
+                    if (caret < 0) caret = sb.Length;
+                    sb.Append(ProcedureVariable(parameter));
+                    if (parameter.IsOutput) sb.Append(" OUTPUT");
+                }
+                else
+                {
+                    if (caret < 0) caret = sb.Length;
+                    sb.Append("NULL");
+                }
+                sb.Append(" /* ").Append(parameter.DisplayType).Append(parameter.IsReadOnly ? " READONLY" : "").Append(" */");
+            }
+            if (needsVariables)
+                sb.Append(newLine).Append(indent).Append("END");
+            return new GeneratedText(sb.ToString(), caret);
+        }
+
+        private static string ProcedureVariable(ProcedureParameterInfo parameter) =>
+            "@SqlHelper_" + parameter.Name.TrimStart('@');
+
         /// <summary>
         /// Text to append after <c>INSERT INTO table</c>: the column list and a VALUES row with a typed
         /// placeholder per column. Identity, computed and rowversion columns are left out.

@@ -53,6 +53,22 @@ namespace SsmsSqlHelper.Ssms
             }
         }
 
+        public static void GetQueryWindowConnection(out UIConnectionInfo ui, out IDbConnection live)
+        {
+            ThreadHelper.ThrowIfNotOnUIThread();
+            try
+            {
+                ui = ServiceCache.ScriptFactory?.CurrentlyActiveWndConnectionInfo?.UIConnectionInfo;
+                live = GetLiveConnection();
+            }
+            catch (Exception ex)
+            {
+                Log.Error("Failed to read query window connection for ALTER script", ex);
+                ui = null;
+                live = null;
+            }
+        }
+
         /// <summary>
         /// The live connection reflects USE statements and the database dropdown, which
         /// UIConnectionInfo does not. Read via reflection because the field is private.

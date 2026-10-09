@@ -229,6 +229,18 @@ namespace SsmsSqlHelper.Tests
             Assert.AreEqual("Customer", text.Substring(start, end - start));
         }
 
+        [TestMethod]
+        public void FromKeywordBecomesTableNameContextAfterSpace()
+        {
+            const string beforeSpace = "SELECT * FROM";
+            const string afterSpace = "SELECT * FROM ";
+            const string partialName = "SELECT * FROM budgets";
+            Assert.IsFalse(SqlContext.TryGetTableNameSpan(beforeSpace, beforeSpace.Length, out _, out _));
+            Assert.IsTrue(SqlContext.TryGetTableNameSpan(afterSpace, afterSpace.Length, out _, out _));
+            Assert.IsTrue(SqlContext.TryGetTableNameSpan(partialName, partialName.Length, out var start, out _));
+            Assert.AreEqual("budgets", partialName.Substring(start));
+        }
+
         [DataTestMethod]
         [DataRow("SELECT * |")]
         [DataRow("SELECT * FROM dbo.Customer c|")]

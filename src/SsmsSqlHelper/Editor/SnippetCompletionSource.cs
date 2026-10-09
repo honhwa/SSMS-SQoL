@@ -38,7 +38,9 @@ namespace SsmsSqlHelper.Editor
         /// <summary>Key of the <see cref="Snippet"/> stored on each item, read by <see cref="SnippetCommitManager"/>.</summary>
         internal static readonly object SnippetKey = typeof(Snippet);
 
-        private const int MinTypedCharacters = 2;
+        // Column completion opens on the first character. Join that same session
+        // immediately, otherwise a later "ssf" cannot enter its already-open list.
+        private const int MinTypedCharacters = 1;
         private static readonly ImageElement Icon = new ImageElement(
             new ImageId(KnownMonikers.Snippet.Guid, KnownMonikers.Snippet.Id), "Snippet");
 

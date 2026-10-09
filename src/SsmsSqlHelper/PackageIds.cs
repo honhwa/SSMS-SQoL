@@ -13,5 +13,6 @@ namespace SsmsSqlHelper
         public const int SurroundWithSnippetCommandId = 0x0220;
         public const int RecoverQueriesCommandId = 0x0230;
         public const int RefreshMetadataCommandId = 0x0150;
+        public const int CheckForUpdatesCommandId = 0x0300;
     }
 }

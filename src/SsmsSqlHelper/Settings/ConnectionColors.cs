@@ -24,6 +24,12 @@ namespace SsmsSqlHelper.Settings
         /// <summary>What a fresh install starts with: anything that looks like production stands out.</summary>
         public static List<ConnectionColorRule> Defaults() => new List<ConnectionColorRule>
         {
+            new ConnectionColorRule { Match = "*prod*", Color = "#FF6363" },
+        };
+
+        // Keep the previous fallback for a settings.json written before connectionColors existed.
+        public static List<ConnectionColorRule> LegacyDefaults() => new List<ConnectionColorRule>
+        {
             new ConnectionColorRule { Match = "prod", Color = "#B71C1C" },
         };
 
@@ -72,7 +78,7 @@ namespace SsmsSqlHelper.Settings
                 var eq = line.LastIndexOf('=');
                 if (eq < 0)
                 {
-                    problems.Add($"Line {i + 1}: write it as  text = color  (for example  prod = #B71C1C).");
+                    problems.Add($"Line {i + 1}: write it as  text = color  (for example  *prod* = #FF6363).");
                     continue;
                 }
 

@@ -45,10 +45,22 @@ JOIN sys.columns pc ON pc.object_id = fkc.parent_object_id AND pc.column_id = fk
 JOIN sys.columns rc ON rc.object_id = fkc.referenced_object_id AND rc.column_id = fkc.referenced_column_id
 ORDER BY fk.object_id, fkc.constraint_column_id;";
 
-        // Changes whenever a table, view, key or foreign key is created, altered or dropped
+        private const string ProcedureQuery = @"
+SELECT p.object_id, s.name, p.name, prm.name, ts.name, t.name,
+       prm.is_output, prm.is_readonly, prm.max_length, prm.precision, prm.scale
+FROM sys.procedures p
+JOIN sys.schemas s ON s.schema_id = p.schema_id
+LEFT JOIN sys.parameters prm ON prm.object_id = p.object_id AND prm.parameter_id > 0
+LEFT JOIN sys.types t ON t.user_type_id = prm.user_type_id
+LEFT JOIN sys.schemas ts ON ts.schema_id = t.schema_id
+WHERE p.is_ms_shipped = 0
+ORDER BY s.name, p.name, prm.parameter_id;";
+
+        // Changes whenever a table, view, procedure, key or foreign key is created, altered or dropped
         private const string StampQuery = @"
-SELECT CAST(COUNT(*) AS varchar(20)) + '|' + ISNULL(CONVERT(varchar(30), MAX(modify_date), 126), '')
-FROM sys.objects WHERE type IN ('U', 'V', 'F', 'PK') AND is_ms_shipped = 0;";
+SELECT CAST(COUNT(*) AS varchar(20)) + '|' +
+       ISNULL(CONVERT(varchar(20), CHECKSUM_AGG(BINARY_CHECKSUM(object_id, modify_date))), '')
+FROM sys.objects WHERE type IN ('U', 'V', 'P', 'PC', 'F', 'PK') AND is_ms_shipped = 0;";
 
         /// <summary>A cheap fingerprint of the schema: compare with <see cref="DbMetadata.SchemaStamp"/> to see if a reload is needed.</summary>
         public static async Task<string> ReadStampAsync(ActiveConnection connection, CancellationToken cancellationToken)
@@ -71,6 +83,7 @@ FROM sys.objects WHERE type IN ('U', 'V', 'F', 'PK') AND is_ms_shipped = 0;";
             var stopwatch = Stopwatch.StartNew();
             var tables = new List<TableInfo>();
             List<ForeignKeyInfo> foreignKeys = null;
+            List<ProcedureInfo> procedures = null;
             string stamp;
 
             using (var sql = connection.CreateSqlConnection())
@@ -120,9 +133,52 @@ FROM sys.objects WHERE type IN ('U', 'V', 'F', 'PK') AND is_ms_shipped = 0;";
                 {
                     Log.Error("Could not read foreign keys; join suggestions will rely on column names only", ex);
                 }
+
+                try
+                {
+                    procedures = await LoadProceduresAsync(sql, cancellationToken).ConfigureAwait(false);
+                }
+                catch (SqlException ex)
+                {
+                    Log.Error("Could not read procedures; EXEC expansion will be unavailable", ex);
+                }
             }
 
-            return new DbMetadata(connection.Server, connection.Database, tables, DateTime.Now, stopwatch.Elapsed, foreignKeys, stamp);
+            return new DbMetadata(connection.Server, connection.Database, tables, DateTime.Now, stopwatch.Elapsed, foreignKeys, stamp, procedures);
+        }
+
+        private static async Task<List<ProcedureInfo>> LoadProceduresAsync(SqlConnection sql, CancellationToken cancellationToken)
+        {
+            var result = new List<ProcedureInfo>();
+            using (var cmd = new SqlCommand(ProcedureQuery, sql) { CommandTimeout = 60 })
+            using (var reader = await cmd.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false))
+            {
+                var currentId = -1;
+                ProcedureInfo current = null;
+                while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
+                {
+                    var id = reader.GetInt32(0);
+                    if (id != currentId)
+                    {
+                        currentId = id;
+                        current = new ProcedureInfo(reader.GetString(1), reader.GetString(2));
+                        result.Add(current);
+                    }
+                    if (!reader.IsDBNull(3))
+                        current.Parameters.Add(new ProcedureParameterInfo
+                        {
+                            Name = reader.GetString(3),
+                            TypeSchema = reader.GetString(4),
+                            TypeName = reader.GetString(5),
+                            IsOutput = reader.GetBoolean(6),
+                            IsReadOnly = reader.GetBoolean(7),
+                            MaxLength = reader.GetInt16(8),
+                            Precision = reader.GetByte(9),
+                            Scale = reader.GetByte(10),
+                        });
+                }
+            }
+            return result;
         }
 
         private static async Task<List<ForeignKeyInfo>> LoadForeignKeysAsync(SqlConnection sql, List<TableInfo> tables, CancellationToken cancellationToken)

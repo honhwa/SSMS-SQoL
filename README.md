@@ -1,105 +1,105 @@
-# SsmsSqlHelper
+# SQL Helper for SSMS 22
 
-A SQL Prompt-style add-in for **SQL Server Management Studio 22** (VSIX). Snippets, table/column/join suggestions, automatic aliases, safety warnings and a backup of unsaved query tabs.
+SQL Helper is a VSIX extension for **SQL Server Management Studio 22**. It adds SQL completion, snippets, object navigation, connection awareness, and recovery for unsaved query tabs.
 
-- SSMS 22 only (VS 2026 shell, .NET Framework 4.8)
-- SQL Authentication connections
-- Everything runs locally; the only database access is read-only queries against `sys.objects`, `sys.columns` and `sys.foreign_keys` on the connection of the active query window
+## Install
 
-> Status: in development. Not every feature has been verified inside SSMS yet (see [Known uncertainties](#known-uncertainties)).
+1. Download or build `dist/SsmsSqlHelper-2.0.0-beta.zip` and extract it.
+2. Close every SSMS window.
+3. Run `Install.cmd` from the extracted folder, then start SSMS.
 
-## Features
+Run `Install.cmd` again to update an existing installation. Run `Uninstall.cmd` to remove the extension. Installation is per user and does not require administrator rights. Your snippets and settings remain on disk after uninstalling.
 
-| Area | What it does |
-|---|---|
-| **Snippets** | Type a shortcut (`ssf`, `st100`, `ii`, `uu`, ...) and press **Tab**. A suggestion list explains what the shortcut will insert. Supports tab stops (`$1`, `${1:text}`, `$0`), `$CURSOR$`, `$SELECTED$` and variables (`$DATE$`, `$TIME$`, `$DATETIME$`, `$USER$`, `$MACHINE$`, `$SERVER$`, `$DATABASE$`, `$CLIPBOARD$`). `$$` is a literal `$`. |
-| **Context Tab expansion** | `SELECT * FROM Budgets` + Tab on the `*` expands to the column list (a picker with *Select all* appears). `INSERT INTO Table` + Tab generates the column list. |
-| **Table suggestions** | After `FROM` / `JOIN` / `INSERT INTO` / `UPDATE` and so on. |
-| **Join suggestions** | After `JOIN x` the `ON` condition is suggested from foreign keys, then from naming convention (`BudgetId` -> `Budgets.Id`) because many schemas do not declare every FK. |
-| **Automatic aliases** | `Budgets` -> `b`, `BudgetLines` -> `bl` (capital letters), numbered on collision, reserved words avoided. |
-| **Column suggestions** | In SELECT, WHERE, ON, ORDER BY and after `alias.`. Columns carry the alias when the query has one. Reopens after Backspace/Delete. |
-| **Keyword suggestions** | **Ctrl+Space** (or Ctrl+J) offers what normally comes next (WHERE, GROUP BY, ...). Follows the letter case of the script. |
-| **WHERE warning** | Warns before an `UPDATE` / `DELETE` without `WHERE` is executed. |
-| **Connection banner** | Server and database in large letters at the top of the query window, coloured by rule (default: names containing `prod` are red). |
-| **Backup of unsaved tabs** | A copy of unsaved query text is written 3 s after typing stops. After SSMS crashes or is ended from Task Manager, the next start offers to recover the tabs. |
-| **Metadata cache** | Loaded per server/database/user in the background, refreshed automatically when the schema fingerprint changes. |
+For a local development build, close SSMS and run:
 
-Menu: **Tools -> SQL Helper** contains Show Active Connection, Edit Snippets, Surround With Snippet..., Recover Unsaved Queries... and Refresh Metadata.
-
-### Snippets
-
-Edit them in **Tools -> SQL Helper -> Edit Snippets** (also holds the on/off switches for each feature and the banner colour rules). The source of truth is `%AppData%\SsmsSqlHelper\snippets.json`, one snippet per line; the built-in set is in `src/SsmsSqlHelper/Snippets/DefaultSnippets.json`.
-
-### Settings
-
-`%AppData%\SsmsSqlHelper\settings.json`: `showSnippetHints`, `showColumnHints`, `showKeywordHints`, `autoAlias`, `warnMissingWhere`, `backupUnsavedTabs`, `showConnectionBanner`, `connectionColors`.
-
-### Backup of unsaved tabs
-
-- Copies live in `%AppData%\SsmsSqlHelper\Backups\<session>\`; each running SSMS holds an exclusive `.lock` in its folder, so several SSMS windows never touch each other's copies and the OS releases the lock however the process ends.
-- Saving or closing a tab normally removes its copy.
-- Recovered tabs are written to `%AppData%\SsmsSqlHelper\Recovered\` and opened unconnected.
-- Copies older than 14 days or identical to the saved file are dropped.
-- Query text is stored unencrypted in the user profile while a tab is unsaved.
-
-## Repository layout
-
-```
-SsmsSqlHelper.sln
-src/SsmsSqlHelper/          the VSIX
-  Backup/                   unsaved-tab backup (store, service, tracker)
-  Commands/                 menu commands, ExecuteGuard (WHERE warning)
-  Editor/                   MEF completion sources, command filter, banner margin
-  Generation/               pure generators: aliases, joins, columns, context expansion
-  Metadata/                 loaders, cache, DbMetadata
-  Parsing/                  T-SQL tokenizer and context analysis (no VS types)
-  Settings/ Snippets/ Ssms/ UI/ Diagnostics/
-tests/SsmsSqlHelper.Tests/  MSTest (net48); links the pure source files
-scripts/dev-install.ps1     install / uninstall into the local SSMS 22
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\dev-install.ps1
 ```
 
-Logic that does not need Visual Studio lives in `Parsing/`, `Generation/`, `Snippets/` and `Backup/BackupStore.cs`, so it is unit-tested without SSMS. Only `Ssms/SsmsConnectionAdapter.cs` touches SSMS internals.
+## Quick reference
 
-## Building
+| Action | How to use it |
+| --- | --- |
+| Expand a snippet | Type a shortcut such as `ssf`, `ii`, or `uu`, then press **Tab**. |
+| Expand `SELECT *` | Put the caret on `*` in `SELECT * FROM dbo.TableName`, then press **Tab** to choose columns. |
+| Add procedure parameters | Type `EXEC dbo.ProcedureName`, then press **Tab**. |
+| Open an object for editing | Press **F12** on a procedure, view, or function to open an `ALTER` script in a new query tab. On a table, F12 opens Table Designer. |
+| Find an object | Press **Ctrl+F12** on a procedure, table, view, or function to select it in Object Explorer. |
+| Open suggestions | Press **Ctrl+Space** or **Ctrl+J**. |
 
-Requirements: Visual Studio 2026 (or its Build Tools) with the *Visual Studio extension development* workload, SSMS 22 installed (its DLLs are referenced from the install directory, not copied).
+F12 and Ctrl+F12 also work on a procedure name written alone, without `EXEC`. An `ALTER` script opened with F12 is **never executed automatically**.
+
+## Writing SQL
+
+### Completion
+
+- Suggests tables after `FROM`, `JOIN`, `INSERT INTO`, and `UPDATE`.
+- Suggests columns in `SELECT`, `WHERE`, `ON`, and `ORDER BY`, and after `alias.`.
+- Suggests SQL clauses and operators for the current position. Typing `WHERE `, `AND `, `OR `, or `ON ` switches to condition suggestions such as `EXISTS` without requiring Tab.
+- Suggests functions such as `GETDATE()`, `ISNULL(`, `COALESCE(`, and `IIF(` in both top-level and nested expressions. Functions and columns can appear in the same list.
+- Shows function syntax and parameter hints while typing, for example `CAST(expression AS data_type)`.
+- Colors matched `()`, `{}`, and `[]` by nesting level. Brackets in strings and comments are ignored.
+
+### Snippets and Tab expansions
+
+Type `ssf` and press Tab to insert `SELECT * FROM `, including inside `WHERE EXISTS (...)`. A complete snippet shortcut takes priority even when a column completion list is open. The table list appears after the expansion.
+
+Tab can also generate an `INSERT` column list, add named arguments to an `EXEC` call, and expand a `JOIN` condition. Generated `NULL` argument values are placeholders to edit before running the query. Table aliases are generated automatically where useful; for example, `BudgetLines` becomes `bl`.
+
+Snippet templates support tab stops (`$1`, `${1:text}`, `$0`), `$CURSOR$`, `$SELECTED$`, and variables such as `$DATE$`, `$USER$`, `$SERVER$`, `$DATABASE$`, and `$CLIPBOARD$`. Use `$$` for a literal dollar sign.
+
+## Connection safety and recovery
+
+- A banner above each query shows its server and database. New installations include the color rule `*prod* = #FF6363`. Edit the rule without changing previously saved settings.
+- The extension warns before executing an `UPDATE` or `DELETE` statement without `WHERE`.
+- Unsaved query tabs are copied to disk after three seconds without typing. After an unexpected SSMS shutdown, use **Tools → SQL Helper → Recover Unsaved Queries**.
+- Metadata is cached separately by server, database, and user, and refreshed when the schema changes.
+
+Backup files are stored in `%AppData%\SsmsSqlHelper\Backups\<session>\`. Normal saves and tab closes remove their backup. Recovered files are stored in `%AppData%\SsmsSqlHelper\Recovered\` and open without a database connection. Old backups are removed after 14 days. **Backed-up SQL is not encrypted.**
+
+## Settings and updates
+
+Open **Tools → SQL Helper → Edit Snippets** to manage snippets, feature switches, and connection banner colors. Other commands in that menu include Show Active Connection, Surround With Snippet, Recover Unsaved Queries, and Refresh Metadata.
+
+| File | Purpose |
+| --- | --- |
+| `%AppData%\SsmsSqlHelper\snippets.json` | Your snippets |
+| `%AppData%\SsmsSqlHelper\settings.json` | Feature switches and connection colors |
+| `src/SsmsSqlHelper/Snippets/DefaultSnippets.json` | Built-in snippet templates |
+
+**Tools → SQL Helper → Check for Updates** checks GitHub Releases only when selected. If an update is available, choose **Yes** to open the [Releases page](https://github.com/jirakitc/SSMS-SQoL/releases) in your browser. The check requires an internet connection.
+
+## Build from source
+
+You need SSMS 22, .NET Framework 4.8, and Visual Studio 2026 or Build Tools with the *Visual Studio extension development* workload. The project references SSMS assemblies from the build machine; it does not bundle them in the VSIX.
 
 ```powershell
 msbuild SsmsSqlHelper.sln /restore
 dotnet test tests\SsmsSqlHelper.Tests
+powershell -ExecutionPolicy Bypass -File scripts\build-release.ps1
 ```
 
-The VSIX is produced at `src\SsmsSqlHelper\bin\Debug\SsmsSqlHelper.vsix`.
+The Debug VSIX is written to `src\SsmsSqlHelper\bin\Debug\SsmsSqlHelper.vsix`. The release script runs tests, builds the Release VSIX, and creates `dist\SsmsSqlHelper-<version>.zip`.
 
-## Installing for development
+The VSIX version is in `src/SsmsSqlHelper/source.extension.vsixmanifest`; the installer label comes from `AssemblyInformationalVersion` in `Properties/AssemblyInfo.cs` (currently `2.0.0-beta`). VSIX requires a numeric version, so `AssemblyVersion` and `AssemblyFileVersion` must match it. **Change version numbers only when explicitly requested.**
 
-SSMS has no experimental instance. Close SSMS, then:
+| Directory | Responsibility |
+| --- | --- |
+| `src/SsmsSqlHelper/Editor/` | Completion, shortcuts, and editor UI |
+| `src/SsmsSqlHelper/Parsing/`, `Generation/` | T-SQL context and generated SQL |
+| `src/SsmsSqlHelper/Metadata/`, `Ssms/` | Database metadata and SSMS integration |
+| `src/SsmsSqlHelper/Snippets/`, `Settings/`, `Backup/` | Snippets, preferences, and query recovery |
+| `tests/SsmsSqlHelper.Tests/` | Logic tests that run without SSMS |
 
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts\dev-install.ps1            # Debug build
-powershell -ExecutionPolicy Bypass -File scripts\dev-install.ps1 -Uninstall
-```
+## Troubleshooting and limitations
 
-If menus do not appear after an install, close SSMS completely and run once:
+If the extension does not appear, close SSMS and run:
 
 ```powershell
 & "C:\Program Files\Microsoft SQL Server Management Studio 22\Release\Common7\IDE\SSMS.exe" /updateconfiguration
 ```
 
-If the package fails to load, SSMS names `%AppData%\Microsoft\SSMS\22.0_*\ActivityLog.xml` in its error; search it for `SsmsSqlHelper`. The add-in's own log is the *SQL Helper* pane of the Output window.
+Check **View → Output → SQL Helper** or `%LocalAppData%\SsmsSqlHelper\log.txt`. For package loading errors, search for `SsmsSqlHelper` in `%AppData%\Microsoft\SSMS\22.0_*\ActivityLog.xml`.
 
-## Team installer
-
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts\build-release.ps1
-```
-
-Runs the tests, builds Release and writes `dist\SsmsSqlHelper-<version>.zip` (git-ignored). Give the zip to the team: unzip, close SSMS, double-click `Install.cmd` (it removes any previous version first, so it is also the updater; `Uninstall.cmd` removes it). The version comes from `source.extension.vsixmanifest`; bump it for each release. Per-user install, no administrator rights needed for the VSIX itself.
-
-## Known uncertainties
-
-Not yet confirmed inside SSMS: the banner margin in query windows, `Query.Execute` hooking for the WHERE warning (the command name is logged if the lookup fails), Tab accepting soft-selected suggestions, and `ITextDocument.IsDirty` for query buffers (the backup tracker logs it if no document is found).
-
-## Roadmap
-
-Installer for the team, shared team snippet file, alias overrides (e.g. `Budgets = bg`), production-server warning on execute, `EXEC` parameter generation, INSERT from data, SQL formatting.
+- Only SSMS 22 is supported.
+- F12 requires a readable T-SQL definition for views and functions. Encrypted objects, or objects whose definition you cannot access, cannot be opened as an `ALTER` script.

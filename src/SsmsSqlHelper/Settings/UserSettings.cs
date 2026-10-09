@@ -12,6 +12,7 @@ namespace SsmsSqlHelper.Settings
         public UserSettings()
         {
             SetDefaults(default(StreamingContext));
+            ConnectionColors = Settings.ConnectionColors.Defaults();
         }
 
         /// <summary>Show a list of matching snippet shortcuts while typing (Ctrl+Space shows all of them).</summary>
@@ -57,7 +58,7 @@ namespace SsmsSqlHelper.Settings
             WarnMissingWhere = true;
             BackupUnsavedTabs = true;
             ShowConnectionBanner = true;
-            ConnectionColors = Settings.ConnectionColors.Defaults();
+            ConnectionColors = Settings.ConnectionColors.LegacyDefaults();
         }
 
         public static UserSettings Parse(string json)

@@ -54,6 +54,12 @@
           <ButtonText>Refresh Metadata</ButtonText>
         </Strings>
       </Button>
+      <Button guid="guidSsmsSqlHelperCmdSet" id="CheckForUpdatesCommandId" priority="0x0300" type="Button">
+        <Parent guid="guidSsmsSqlHelperCmdSet" id="ToolsMenuGroup" />
+        <Strings>
+          <ButtonText>Check for Updates...</ButtonText>
+        </Strings>
+      </Button>
     </Buttons>
   </Commands>
 
@@ -68,6 +74,7 @@
       <IDSymbol name="SurroundWithSnippetCommandId" value="0x0220" />
       <IDSymbol name="RecoverQueriesCommandId" value="0x0230" />
       <IDSymbol name="RefreshMetadataCommandId" value="0x0150" />
+      <IDSymbol name="CheckForUpdatesCommandId" value="0x0300" />
     </GuidSymbol>
   </Symbols>
 </CommandTable>

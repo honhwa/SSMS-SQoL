@@ -108,6 +108,29 @@ namespace SsmsSqlHelper.Tests
             AssertStartsWith("SELECT * FROM a WHERE NOT |", "EXISTS");
         }
 
+        [DataTestMethod]
+        [DataRow("SELECT * FROM dbo.Budgets b WHERE |")]
+        [DataRow("SELECT * FROM dbo.Budgets b WHERE EXISTS (SELECT * FROM dbo.Absences a where |)")]
+        [DataRow("SELECT * FROM a WHERE x = 1 AND |")]
+        [DataRow("SELECT * FROM a WHERE x = 1 OR |")]
+        public void SpaceAfterConditionWordRefreshesCompletion(string marked)
+        {
+            var caret = marked.IndexOf('|');
+            var sql = marked.Remove(caret, 1);
+            Assert.IsTrue(SqlContext.ShouldRefreshCompletionAfterSpace(sql, caret));
+            AssertContains(marked, "EXISTS");
+        }
+
+        [DataTestMethod]
+        [DataRow("SELECT * FROM a WHERE Name |")]
+        [DataRow("SELECT * FROM a WHERE 'where |'")]
+        [DataRow("-- WHERE |")]
+        public void OrdinaryWordsAndTriviaDoNotRefreshConditionCompletion(string marked)
+        {
+            var caret = marked.IndexOf('|');
+            Assert.IsFalse(SqlContext.ShouldRefreshCompletionAfterSpace(marked.Remove(caret, 1), caret));
+        }
+
         [TestMethod]
         public void AfterAValueTheComparisonOperators()
         {
@@ -202,6 +225,64 @@ namespace SsmsSqlHelper.Tests
             Assert.IsNull(Offered("SELECT TOP (10) PERCENT |"));
         }
 
+        [DataTestMethod]
+        [DataRow("SELECT |")]
+        [DataRow("select get| ")]
+        [DataRow("SELECT DISTINCT |")]
+        [DataRow("SELECT Id, | FROM Budgets")]
+        public void SelectExpressionsOfferFunctions(string text)
+        {
+            AssertContains(text, "GETDATE()", "ISNULL(", "COALESCE(", "IIF(");
+        }
+
+        [DataTestMethod]
+        [DataRow("SELECT ISNULL(a, isnu|) FROM dbo.Budgets")]
+        [DataRow("SELECT ISNULL(a, COALESCE(b, iif|)) FROM dbo.Budgets")]
+        [DataRow("SELECT IIF(a > 0, coale|, 0) FROM dbo.Budgets")]
+        public void NestedFunctionArgumentsOfferFunctionsAndColumns(string marked)
+        {
+            var caret = marked.IndexOf('|');
+            var sql = marked.Remove(caret, 1);
+            Assert.IsTrue(SqlContext.TryGetKeywordContext(sql, caret, out var keywords));
+            AssertContains(marked, "IIF(", "ISNULL(", "COALESCE(");
+            Assert.IsTrue(SqlContext.TryGetColumnContext(sql, caret, out _));
+        }
+
+        [TestMethod]
+        public void FunctionDescriptionShowsParameterSyntax()
+        {
+            var cast = SqlKeywords.SelectFunctions().Single(s => s.Text == "CAST(");
+            var iif = SqlKeywords.SelectFunctions().Single(s => s.Text == "IIF(");
+            StringAssert.Contains(cast.Description, "CAST(expression AS data_type");
+            StringAssert.Contains(iif.Description, "IIF(boolean_expression, true_value, false_value)");
+        }
+
+        [TestMethod]
+        public void CastExpressionCanContainFunctionButTypePositionDoesNot()
+        {
+            AssertContains("SELECT CAST(ISNU| AS int)", "ISNULL(");
+            Assert.IsNull(Offered("SELECT CAST(x AS INT|)"));
+        }
+
+        [TestMethod]
+        public void FunctionSuggestionsInsertCallSyntax()
+        {
+            Assert.AreEqual("GETDATE()", SqlKeywordInsert("SELECT |", "GETDATE()"));
+            Assert.AreEqual("ISNULL(", SqlKeywordInsert("SELECT |", "ISNULL("));
+            Assert.AreEqual("COALESCE(", SqlKeywordInsert("SELECT |", "COALESCE("));
+        }
+
+        [TestMethod]
+        public void FunctionsAndColumnsShareSelectExpressionContext()
+        {
+            const string marked = "SELECT isnu| FROM dbo.BudgetLines bl";
+            var caret = marked.IndexOf('|');
+            var sql = marked.Remove(caret, 1);
+            Assert.IsTrue(SqlContext.TryGetKeywordContext(sql, caret, out var keywords));
+            CollectionAssert.Contains(keywords.Suggestions.Select(s => s.Text).ToArray(), "ISNULL(");
+            Assert.IsTrue(SqlContext.TryGetColumnContext(sql, caret, out _));
+        }
+
         [TestMethod]
         public void AfterASelectedItemFromOrAs()
         {
@@ -213,7 +294,7 @@ namespace SsmsSqlHelper.Tests
             AssertStartsWith("SELECT t.Name |", "FROM", "AS");
             AssertStartsWith("SELECT 1 |", "FROM", "AS");
             Assert.IsNull(Offered("SELECT a AS |"));
-            Assert.IsNull(Offered("SELECT a, |"));
+            AssertContains("SELECT a, |", "GETDATE()", "ISNULL(", "COALESCE(");
             Assert.IsNull(Offered("SELECT a + |"));
         }
 
@@ -327,7 +408,6 @@ namespace SsmsSqlHelper.Tests
         // ---- where nothing is offered ----
 
         [DataTestMethod]
-        [DataRow("SELECT COUNT(|")]                           // inside a function call
         [DataRow("SELECT * FROM a WHERE x IN (|")]
         [DataRow("SELECT * FROM a WHERE (x = 1 AND |")]
         [DataRow("SELECT a.|")]                               // after a dot

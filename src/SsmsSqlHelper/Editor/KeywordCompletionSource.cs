@@ -63,7 +63,12 @@ namespace SsmsSqlHelper.Editor
             var word = window.Text.Substring(context.Start, context.End - context.Start);
             if (word.Length > 0 && !context.Suggestions.Any(s => s.Text.StartsWith(word, StringComparison.OrdinalIgnoreCase)))
                 return CompletionStartData.DoesNotParticipateInCompletion;     // a name or alias is being typed, not a keyword
-            if (!explicitInvoke && word.Length < MinTypedCharacters)
+            // Column completion starts on the first letter. A function must join that same
+            // session immediately or it cannot appear alongside the columns later.
+            var startsFunction = word.Length == 1 && context.Suggestions.Any(s =>
+                s.Text.StartsWith(word, StringComparison.OrdinalIgnoreCase) &&
+                (s.Text.EndsWith("(", StringComparison.Ordinal) || s.Text.EndsWith("()", StringComparison.Ordinal)));
+            if (!explicitInvoke && word.Length < MinTypedCharacters && !startsFunction)
                 return CompletionStartData.DoesNotParticipateInCompletion;
 
             _suggestions = context.Suggestions;
@@ -88,12 +93,14 @@ namespace SsmsSqlHelper.Editor
             var items = suggestions.Select((s, i) =>
             {
                 var insert = lowercase ? s.InsertText.ToLowerInvariant() : s.InsertText;
+                var function = s.Text.EndsWith("(", StringComparison.Ordinal)
+                    ? SqlFunctionSignatures.Find(s.Text.Substring(0, s.Text.Length - 1)) : null;
                 var item = new CompletionItem(
                     displayText: lowercase ? s.Text.ToLowerInvariant() : s.Text,
                     source: this,
                     icon: Icon,
                     filters: ImmutableArray<CompletionFilter>.Empty,
-                    suffix: s.Description,
+                    suffix: function?.Syntax ?? s.Description,
                     insertText: (leadingSpace ? " " : "") + insert,
                     sortText: "0" + i.ToString("D3"),
                     filterText: s.Text,

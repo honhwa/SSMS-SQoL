@@ -13,12 +13,16 @@
     <Compile Include="..\..\src\SsmsSqlHelper\Metadata\SqlIdentifier.cs" Link="Linked\SqlIdentifier.cs" />
     <Compile Include="..\..\src\SsmsSqlHelper\Metadata\TableInfo.cs" Link="Linked\TableInfo.cs" />
     <Compile Include="..\..\src\SsmsSqlHelper\Parsing\SqlTokenizer.cs" Link="Linked\SqlTokenizer.cs" />
+    <Compile Include="..\..\src\SsmsSqlHelper\Parsing\BracketColorizer.cs" Link="Linked\BracketColorizer.cs" />
     <Compile Include="..\..\src\SsmsSqlHelper\Parsing\SqlContext.cs" Link="Linked\SqlContext.cs" />
     <Compile Include="..\..\src\SsmsSqlHelper\Generation\AliasGenerator.cs" Link="Linked\AliasGenerator.cs" />
     <Compile Include="..\..\src\SsmsSqlHelper\Generation\SqlGenerator.cs" Link="Linked\SqlGenerator.cs" />
+    <Compile Include="..\..\src\SsmsSqlHelper\Generation\ProcedureAlterScript.cs" Link="Linked\ProcedureAlterScript.cs" />
+    <Compile Include="..\..\src\SsmsSqlHelper\Ssms\ServerNameMatcher.cs" Link="Linked\ServerNameMatcher.cs" />
     <Compile Include="..\..\src\SsmsSqlHelper\Generation\ContextExpander.cs" Link="Linked\ContextExpander.cs" />
     <Compile Include="..\..\src\SsmsSqlHelper\Generation\JoinSuggester.cs" Link="Linked\JoinSuggester.cs" />
     <Compile Include="..\..\src\SsmsSqlHelper\Metadata\ForeignKeyInfo.cs" Link="Linked\ForeignKeyInfo.cs" />
+    <Compile Include="..\..\src\SsmsSqlHelper\Metadata\ProcedureInfo.cs" Link="Linked\ProcedureInfo.cs" />
     <Compile Include="..\..\src\SsmsSqlHelper\Snippets\SnippetFileFormat.cs" Link="Linked\SnippetFileFormat.cs" />
     <Compile Include="..\..\src\SsmsSqlHelper\Settings\UserSettings.cs" Link="Linked\UserSettings.cs" />
     <Compile Include="..\..\src\SsmsSqlHelper\Parsing\SqlContext.Columns.cs" Link="Linked\SqlContext.Columns.cs" />
@@ -31,8 +35,11 @@
     <Compile Include="..\..\src\SsmsSqlHelper\JsonText.cs" Link="Linked\JsonText.cs" />
     <Compile Include="..\..\src\SsmsSqlHelper\Settings\ConnectionColors.cs" Link="Linked\ConnectionColors.cs" />
     <Compile Include="..\..\src\SsmsSqlHelper\Parsing\SqlKeywords.cs" Link="Linked\SqlKeywords.cs" />
+    <Compile Include="..\..\src\SsmsSqlHelper\Parsing\SqlFunctionSignatures.cs" Link="Linked\SqlFunctionSignatures.cs" />
+    <Compile Include="..\..\src\SsmsSqlHelper\Parsing\SqlFunctionCall.cs" Link="Linked\SqlFunctionCall.cs" />
     <Compile Include="..\..\src\SsmsSqlHelper\Parsing\SqlContext.Keywords.cs" Link="Linked\SqlContext.Keywords.cs" />
     <Compile Include="..\..\src\SsmsSqlHelper\Backup\BackupStore.cs" Link="Linked\BackupStore.cs" />
+    <Compile Include="..\..\src\SsmsSqlHelper\Updates\ReleaseChecker.cs" Link="Linked\ReleaseChecker.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Runtime.Serialization" />

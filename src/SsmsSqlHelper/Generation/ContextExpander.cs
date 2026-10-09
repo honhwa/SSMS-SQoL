@@ -67,9 +67,33 @@ namespace SsmsSqlHelper.Generation
                     return ExpandStar(text, context, newLine, metadata);
                 case TabContextKind.SourceTable:
                     return addAliases ? AddAlias(text, context, metadata) : null;
+                case TabContextKind.ExecuteProcedure:
+                    return ExpandProcedure(text, context, newLine, metadata);
                 default:
                     return null;
             }
+        }
+
+        private static TextEdit ExpandProcedure(string text, TabContext context, string newLine, DbMetadata metadata)
+        {
+            var procedure = metadata.FindProcedure(context.Table.Text);
+            if (procedure == null || procedure.Parameters.Count == 0)
+                return null;
+
+            var indent = LineIndent(text, context.StatementStart);
+            var original = text.Substring(context.StatementStart, context.Table.End - context.StatementStart);
+            var generated = SqlGenerator.ExecuteBody(procedure, original, indent, newLine);
+            if (generated == null)
+                return null;
+
+            // OUTPUT parameters need declarations before EXEC; otherwise edit only the gap after its name.
+            if (procedure.Parameters.Any(p => p.IsOutput || p.IsReadOnly))
+                return new TextEdit(context.StatementStart, context.ReplaceEnd - context.StatementStart,
+                    generated.Text, generated.CaretOffset);
+
+            var suffix = generated.Text.Substring(original.Length);
+            return new TextEdit(context.ReplaceStart, context.ReplaceEnd - context.ReplaceStart,
+                suffix, generated.CaretOffset - original.Length);
         }
 
         private static TextEdit ExpandTableStatement(string text, TabContext context, string newLine, DbMetadata metadata)

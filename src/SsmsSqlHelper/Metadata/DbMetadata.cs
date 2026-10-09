@@ -12,9 +12,12 @@ namespace SsmsSqlHelper.Metadata
         private readonly Dictionary<string, TableInfo> _byQualifiedName;
         private readonly ILookup<string, TableInfo> _byName;
         private readonly ILookup<TableInfo, ForeignKeyInfo> _fkByParent;
+        private readonly Dictionary<string, ProcedureInfo> _proceduresByQualifiedName;
+        private readonly ILookup<string, ProcedureInfo> _proceduresByName;
 
         public DbMetadata(string server, string database, IReadOnlyList<TableInfo> tables, DateTime loadedAt, TimeSpan loadDuration,
-            IReadOnlyList<ForeignKeyInfo> foreignKeys = null, string schemaStamp = null)
+            IReadOnlyList<ForeignKeyInfo> foreignKeys = null, string schemaStamp = null,
+            IReadOnlyList<ProcedureInfo> procedures = null)
         {
             SchemaStamp = schemaStamp;
             Server = server;
@@ -23,15 +26,19 @@ namespace SsmsSqlHelper.Metadata
             LoadedAt = loadedAt;
             LoadDuration = loadDuration;
             ForeignKeys = foreignKeys ?? NoForeignKeys;
+            Procedures = procedures ?? new ProcedureInfo[0];
             _byQualifiedName = tables.ToDictionary(t => Key(t.Schema, t.Name), StringComparer.OrdinalIgnoreCase);
             _byName = tables.ToLookup(t => t.Name, StringComparer.OrdinalIgnoreCase);
             _fkByParent = ForeignKeys.ToLookup(f => f.Parent);
+            _proceduresByQualifiedName = Procedures.ToDictionary(p => Key(p.Schema, p.Name), StringComparer.OrdinalIgnoreCase);
+            _proceduresByName = Procedures.ToLookup(p => p.Name, StringComparer.OrdinalIgnoreCase);
         }
 
         public string Server { get; }
         public string Database { get; }
         public IReadOnlyList<TableInfo> Tables { get; }
         public IReadOnlyList<ForeignKeyInfo> ForeignKeys { get; }
+        public IReadOnlyList<ProcedureInfo> Procedures { get; }
         /// <summary>Fingerprint of the schema when this snapshot was read (see <see cref="MetadataLoader.ReadStampAsync"/>); null if unknown.</summary>
         public string SchemaStamp { get; }
         public DateTime LoadedAt { get; }
@@ -67,6 +74,32 @@ namespace SsmsSqlHelper.Metadata
                 return dbo;
 
             var matches = _byName[table].Take(2).ToList();
+            return matches.Count == 1 ? matches[0] : null;
+        }
+
+        public ProcedureInfo FindProcedure(string name)
+        {
+            if (string.IsNullOrWhiteSpace(name))
+                return null;
+
+            var parts = SqlIdentifier.Split(name.Trim());
+            var procedure = parts[parts.Count - 1];
+            if (parts.Count >= 3 && parts[parts.Count - 3].Length > 0 &&
+                !string.Equals(parts[parts.Count - 3], Database, StringComparison.OrdinalIgnoreCase))
+                return null;
+            if (parts.Count >= 4 && parts[parts.Count - 4].Length > 0 &&
+                !string.Equals(parts[parts.Count - 4], Server, StringComparison.OrdinalIgnoreCase))
+                return null;
+            if (parts.Count >= 2)
+            {
+                var schema = parts[parts.Count - 2];
+                return _proceduresByQualifiedName.TryGetValue(Key(schema.Length == 0 ? "dbo" : schema, procedure), out var p) ? p : null;
+            }
+
+            if (_proceduresByQualifiedName.TryGetValue(Key("dbo", procedure), out var dbo))
+                return dbo;
+
+            var matches = _proceduresByName[procedure].Take(2).ToList();
             return matches.Count == 1 ? matches[0] : null;
         }
 

@@ -46,6 +46,8 @@ namespace SsmsSqlHelper.Parsing
         SelectStar,
         /// <summary><c>FROM table|</c> or <c>JOIN table|</c> with no alias yet</summary>
         SourceTable,
+        /// <summary><c>EXEC procedure|</c></summary>
+        ExecuteProcedure,
     }
 
     internal sealed class TabContext
@@ -58,6 +60,8 @@ namespace SsmsSqlHelper.Parsing
 
         /// <summary>Target table for Insert/Update.</summary>
         public ObjectName Table { get; set; }
+        /// <summary>Start of the EXEC keyword for procedure expansion.</summary>
+        public int StatementStart { get; set; }
 
         /// <summary>SourceTable only: the name follows JOIN (as opposed to FROM).</summary>
         public bool IsJoin { get; set; }
@@ -143,6 +147,97 @@ namespace SsmsSqlHelper.Parsing
             return true;
         }
 
+        /// <summary>Span of a procedure name being typed immediately after EXEC or EXECUTE.</summary>
+        public static bool TryGetProcedureNameSpan(string text, int caret, out int start, out int end)
+        {
+            start = end = caret;
+            var tokens = SqlTokenizer.Tokenize(text);
+            if (IsInsideTrivia(tokens, caret))
+                return false;
+
+            var sig = Significant(tokens);
+            var last = LastIndexBefore(sig, caret);
+            if (last >= 0 && sig[last].End == caret &&
+                (sig[last].IsKeyword("EXEC") || sig[last].IsKeyword("EXECUTE")))
+                return true;
+            var nameStartIdx = last + 1;
+            if (last >= 0 && sig[last].End >= caret && (sig[last].IsNamePart || sig[last].IsSymbol('.')))
+            {
+                nameStartIdx = WalkBackName(sig, last);
+                start = sig[nameStartIdx].Start;
+                end = sig[last].IsNamePart ? sig[last].End : caret;
+            }
+
+            var prev = nameStartIdx - 1;
+            return prev >= 0 && (sig[prev].IsKeyword("EXEC") || sig[prev].IsKeyword("EXECUTE")) &&
+                   text.IndexOfAny(new[] { '\r', '\n' }, sig[prev].End, caret - sig[prev].End) < 0;
+        }
+
+        /// <summary>Procedure name under the caret in an EXEC call, declaration, or bare procedure call.</summary>
+        public static ObjectName GetProcedureAtCaret(string text, int caret)
+        {
+            if (caret < 0 || caret > text.Length)
+                return null;
+
+            var tokens = SqlTokenizer.Tokenize(text);
+            if (IsInsideTrivia(tokens, caret))
+                return null;
+
+            var sig = Significant(tokens);
+            var index = sig.FindIndex(t => t.IsNamePart && t.Start <= caret && caret <= t.End);
+            if (index < 0)
+                return null;
+
+            var first = WalkBackName(sig, index);
+            var last = WalkForwardName(sig, index);
+            var keyword = first - 1;
+            var isCall = keyword >= 0 && (sig[keyword].IsKeyword("EXEC") || sig[keyword].IsKeyword("EXECUTE") ||
+                (sig[keyword].IsSymbol('=') && keyword >= 2 && sig[keyword - 1].Kind == TokenKind.Variable &&
+                 (sig[keyword - 2].IsKeyword("EXEC") || sig[keyword - 2].IsKeyword("EXECUTE"))));
+            var isDeclaration = keyword > 0 && (sig[keyword].IsKeyword("PROC") || sig[keyword].IsKeyword("PROCEDURE")) &&
+                (sig[keyword - 1].IsKeyword("CREATE") || sig[keyword - 1].IsKeyword("ALTER"));
+            // SQL Server allows a procedure call without EXEC when the name starts a line.
+            // Metadata lookup in the editor confirms that this name really is a procedure.
+            var lineStart = text.LastIndexOfAny(new[] { '\r', '\n' }, Math.Max(0, sig[first].Start - 1)) + 1;
+            var isBareCall = string.IsNullOrWhiteSpace(text.Substring(lineStart, sig[first].Start - lineStart));
+            if (!isCall && !isDeclaration && !isBareCall)
+                return null;
+
+            return new ObjectName(sig[first].Start, sig[last].End, JoinName(sig, first, last));
+        }
+
+        /// <summary>Potential table, view or function name under the caret; the database lookup verifies its type.</summary>
+        public static ObjectName GetSchemaObjectAtCaret(string text, int caret)
+        {
+            if (caret < 0 || caret > text.Length)
+                return null;
+            var tokens = SqlTokenizer.Tokenize(text);
+            if (IsInsideTrivia(tokens, caret))
+                return null;
+            var sig = Significant(tokens);
+            var index = sig.FindIndex(t => t.IsNamePart && t.Start <= caret && caret <= t.End);
+            if (index < 0)
+                return null;
+            var first = WalkBackName(sig, index);
+            var last = WalkForwardName(sig, index);
+            var previous = first > 0 ? sig[first - 1] : default(SqlToken?);
+            var next = last + 1 < sig.Count ? sig[last + 1] : default(SqlToken?);
+            var lineStart = text.LastIndexOfAny(new[] { '\r', '\n' }, Math.Max(0, sig[first].Start - 1)) + 1;
+            var startsLine = string.IsNullOrWhiteSpace(text.Substring(lineStart, sig[first].Start - lineStart));
+            var followsObjectKeyword = previous.HasValue &&
+                (previous.Value.IsKeyword("FROM") || previous.Value.IsKeyword("JOIN") ||
+                 previous.Value.IsKeyword("INTO") || previous.Value.IsKeyword("UPDATE") ||
+                 previous.Value.IsKeyword("TABLE") || previous.Value.IsKeyword("VIEW") ||
+                 previous.Value.IsKeyword("FUNCTION") || previous.Value.IsKeyword("APPLY") ||
+                 previous.Value.IsKeyword("EXEC") || previous.Value.IsKeyword("EXECUTE") ||
+                 previous.Value.IsKeyword("PROC") || previous.Value.IsKeyword("PROCEDURE"));
+            var functionCall = next.HasValue && next.Value.IsSymbol('(') &&
+                               last > first && sig[last].End == next.Value.Start;
+            if (!startsLine && !followsObjectKeyword && !functionCall)
+                return null;
+            return new ObjectName(sig[first].Start, sig[last].End, JoinName(sig, first, last));
+        }
+
         /// <summary>Recognises the Tab-expandable constructs immediately before the caret.</summary>
         public static TabContext GetTabContext(string text, int caret)
         {
@@ -208,11 +303,15 @@ namespace SsmsSqlHelper.Parsing
                 kind = TabContextKind.UpdateTable;
             else if (sig[prev].IsKeyword("JOIN") || (sig[prev].IsKeyword("FROM") && !(prev > 0 && sig[prev - 1].IsKeyword("DELETE"))))
                 kind = TabContextKind.SourceTable;
+            else if (sig[prev].IsKeyword("EXEC") || sig[prev].IsKeyword("EXECUTE"))
+                kind = TabContextKind.ExecuteProcedure;
             else
                 return null;
 
             // Tab on the next line (to indent) must never reach back and rewrite the line break
             if (kind == TabContextKind.SourceTable && text.IndexOfAny(new[] { '\r', '\n' }, sig[last].End, caret - sig[last].End) >= 0)
+                return null;
+            if (kind == TabContextKind.ExecuteProcedure && text.IndexOfAny(new[] { '\r', '\n' }, sig[last].End, caret - sig[last].End) >= 0)
                 return null;
 
             // Don't generate when the statement already has its body
@@ -228,11 +327,15 @@ namespace SsmsSqlHelper.Parsing
                     return null;
                 if (kind == TabContextKind.SourceTable && (n.IsKeyword("AS") || IsAlias(n)))
                     return null;
+                if (kind == TabContextKind.ExecuteProcedure && !n.IsSymbol(';') && !n.IsKeyword("GO") &&
+                    text.IndexOfAny(new[] { '\r', '\n' }, caret, n.Start - caret) < 0)
+                    return null;
             }
 
             var name = new ObjectName(sig[nameStartIdx].Start, sig[last].End,
                 text.Substring(sig[nameStartIdx].Start, sig[last].End - sig[nameStartIdx].Start));
-            var context = new TabContext { Kind = kind, Table = name, ReplaceStart = name.End, ReplaceEnd = caret };
+            var context = new TabContext { Kind = kind, Table = name, ReplaceStart = name.End, ReplaceEnd = caret,
+                StatementStart = kind == TabContextKind.ExecuteProcedure ? sig[prev].Start : 0 };
 
             if (kind == TabContextKind.SourceTable && sig[prev].IsKeyword("JOIN"))
             {
