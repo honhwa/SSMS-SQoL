@@ -36,6 +36,7 @@ F12 and Ctrl+F12 also work on a procedure name written alone, without `EXEC`. An
 ### Completion
 
 - Suggests tables after `FROM`, `JOIN`, `INSERT INTO`, and `UPDATE`.
+- Suggests `USE` at the start of a statement and accessible database names after `USE ` (including with **Ctrl+Space**).
 - Suggests columns in `SELECT`, `WHERE`, `ON`, and `ORDER BY`, and after `alias.`.
 - Suggests SQL clauses and operators for the current position. Typing `WHERE `, `AND `, `OR `, or `ON ` switches to condition suggestions such as `EXISTS` without requiring Tab.
 - Suggests functions such as `GETDATE()`, `ISNULL(`, `COALESCE(`, and `IIF(` in both top-level and nested expressions. Functions and columns can appear in the same list.

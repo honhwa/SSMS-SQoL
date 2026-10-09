@@ -77,6 +77,7 @@
     <Compile Include="Editor\SnippetSession.cs" />
     <Compile Include="Editor\TableCommitManager.cs" />
     <Compile Include="Editor\TableCompletionSource.cs" />
+    <Compile Include="Editor\DatabaseCompletionSource.cs" />
     <Compile Include="Generation\AliasGenerator.cs" />
     <Compile Include="Generation\ColumnSuggester.cs" />
     <Compile Include="Generation\ContextExpander.cs" />
@@ -91,6 +92,7 @@
     <Compile Include="Metadata\ProcedureInfo.cs" />
     <Compile Include="Metadata\SchemaObjectInfo.cs" />
     <Compile Include="Metadata\MetadataLoader.cs" />
+    <Compile Include="Metadata\DatabaseNameService.cs" />
     <Compile Include="Metadata\MetadataService.cs" />
     <Compile Include="Metadata\SqlIdentifier.cs" />
     <Compile Include="Metadata\TableInfo.cs" />
@@ -110,6 +112,7 @@
     <Compile Include="UI\ThemeStyles.cs" />
     <Compile Include="Parsing\SqlContext.cs" />
     <Compile Include="Parsing\SqlContext.Columns.cs" />
+    <Compile Include="Parsing\SqlContext.Databases.cs" />
     <Compile Include="Parsing\SqlContext.Keywords.cs" />
     <Compile Include="Parsing\SqlKeywords.cs" />
     <Compile Include="Parsing\SqlFunctionSignatures.cs" />

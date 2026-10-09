@@ -27,6 +27,7 @@
     <Compile Include="..\..\src\SsmsSqlHelper\Snippets\SnippetFileFormat.cs" Link="Linked\SnippetFileFormat.cs" />
     <Compile Include="..\..\src\SsmsSqlHelper\Settings\UserSettings.cs" Link="Linked\UserSettings.cs" />
     <Compile Include="..\..\src\SsmsSqlHelper\Parsing\SqlContext.Columns.cs" Link="Linked\SqlContext.Columns.cs" />
+    <Compile Include="..\..\src\SsmsSqlHelper\Parsing\SqlContext.Databases.cs" Link="Linked\SqlContext.Databases.cs" />
     <Compile Include="..\..\src\SsmsSqlHelper\Generation\ColumnSuggester.cs" Link="Linked\ColumnSuggester.cs" />
     <Compile Include="..\..\src\SsmsSqlHelper\Snippets\SnippetTemplate.cs" Link="Linked\SnippetTemplate.cs" />
     <Compile Include="..\..\src\SsmsSqlHelper\Parsing\UnsafeStatementChecker.cs" Link="Linked\UnsafeStatementChecker.cs" />

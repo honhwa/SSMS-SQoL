@@ -69,7 +69,11 @@ namespace SsmsSqlHelper.Editor
             var startsFunction = word.Length == 1 && context.Suggestions.Any(s =>
                 s.Text.StartsWith(word, StringComparison.OrdinalIgnoreCase) &&
                 (s.Text.EndsWith("(", StringComparison.Ordinal) || s.Text.EndsWith("()", StringComparison.Ordinal)));
-            if (!explicitInvoke && word.Length < MinTypedCharacters && !startsFunction)
+            // Snippet completion can open the session on the first character, so statement
+            // keywords (including USE) must join it before the second character is typed.
+            var startsStatementKeyword = context.IsStatementStart && word.Length == 1 &&
+                context.Suggestions.Any(s => s.Text.StartsWith(word, StringComparison.OrdinalIgnoreCase));
+            if (!explicitInvoke && word.Length < MinTypedCharacters && !startsFunction && !startsStatementKeyword)
                 return CompletionStartData.DoesNotParticipateInCompletion;
 
             _suggestions = context.Suggestions;

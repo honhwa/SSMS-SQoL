@@ -46,6 +46,7 @@ namespace SsmsSqlHelper.Editor
             var position = caret.Position - window.Start;
 
             if (!SqlContext.TryGetTableNameSpan(window.Text, position, out _, out _) &&
+                !SqlContext.TryGetDatabaseNameSpan(window.Text, position, out _, out _) &&
                 !SqlContext.TryGetProcedureNameSpan(window.Text, position, out _, out _) &&
                 !SqlContext.TryGetJoinOn(window.Text, position, out _, out _, out _, out _) &&
                 !SqlContext.TryGetColumnContext(window.Text, position, out _) &&

@@ -388,6 +388,14 @@ namespace SsmsSqlHelper.Tests
             AssertStartsWith(text, "SELECT", "INSERT INTO", "UPDATE", "DELETE FROM");
 
         [TestMethod]
+        public void UseIsOfferedAtStatementStart()
+        {
+            AssertContains("|", "USE");
+            AssertContains("u|", "USE");
+            AssertContains("SELECT 1;\r\nu|", "USE");
+        }
+
+        [TestMethod]
         public void GoOnlyCountsOnALineOfItsOwn()
         {
             // "GO" inside a line is a word like any other, the SELECT is still open

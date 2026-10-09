@@ -132,11 +132,13 @@ namespace SsmsSqlHelper.Editor
                                 var startsSelectExpression = SqlContext.TryGetKeywordContext(window.Text, position, out var keywordContext) &&
                                     keywordContext.Suggestions.Exists(s => s.Text == "GETDATE()");
                                 var changedKeywordContext = SqlContext.ShouldRefreshCompletionAfterSpace(window.Text, position);
+                                var startsDatabaseName = SqlContext.TryGetDatabaseNameSpan(window.Text, position, out _, out _);
                                 if (SqlContext.TryGetTableNameSpan(window.Text, position, out _, out _) ||
+                                    startsDatabaseName ||
                                     startsSelectExpression || changedKeywordContext)
                                 {
                                     // The old session cannot add items for the context after this space.
-                                    if (startsSelectExpression || changedKeywordContext)
+                                    if (startsSelectExpression || changedKeywordContext || startsDatabaseName)
                                         _completionBroker.DismissAllSessions(_view);
                                     _asyncCompletionBroker.GetSession(_view)?.Dismiss();
                                     CompletionLauncher.ShowIfApplicableSoon(_asyncCompletionBroker, _view);

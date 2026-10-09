@@ -71,6 +71,7 @@ namespace SsmsSqlHelper.Editor
             var window = TextWindow.Around(triggerLocation.Snapshot, triggerLocation.Position, 4000, 200);
             var position = triggerLocation.Position - window.Start;
             if (SqlContext.TryGetTableNameSpan(window.Text, position, out _, out _) ||
+                SqlContext.TryGetDatabaseNameSpan(window.Text, position, out _, out _) ||
                 SqlContext.TryGetJoinOn(window.Text, position, out _, out _, out _, out _))
                 return CompletionStartData.DoesNotParticipateInCompletion;
 
