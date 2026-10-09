@@ -40,7 +40,7 @@ F12 and Ctrl+F12 also work on a procedure name written alone, without `EXEC`. An
 - Suggests SQL clauses and operators for the current position. Typing `WHERE `, `AND `, `OR `, or `ON ` switches to condition suggestions such as `EXISTS` without requiring Tab.
 - Suggests functions such as `GETDATE()`, `ISNULL(`, `COALESCE(`, and `IIF(` in both top-level and nested expressions. Functions and columns can appear in the same list.
 - Shows function syntax and parameter hints while typing, for example `CAST(expression AS data_type)`.
-- Colors matched `()`, `{}`, and `[]` by nesting level. Brackets in strings and comments are ignored.
+- Colors matched `()`, `{}`, and `[]` by nesting level, and outlines the pair at the caret in red. Brackets in strings and comments are ignored.
 
 ### Snippets and Tab expansions
 
@@ -61,7 +61,7 @@ Backup files are stored in `%AppData%\SsmsSqlHelper\Backups\<session>\`. Normal 
 
 ## Settings and updates
 
-Open **Tools → SQL Helper → Edit Snippets** to manage snippets, feature switches, and connection banner colors. Other commands in that menu include Show Active Connection, Surround With Snippet, Recover Unsaved Queries, and Refresh Metadata.
+Open **Tools → SQL Helper → Edit Snippets** to manage snippets, feature switches, and connection banner colors. Under **Editor highlighting**, control nesting colors and the red matching-bracket border separately. Changes apply to open query tabs after you save. Other commands in that menu include Show Active Connection, Surround With Snippet, Recover Unsaved Queries, and Refresh Metadata.
 
 | File | Purpose |
 | --- | --- |

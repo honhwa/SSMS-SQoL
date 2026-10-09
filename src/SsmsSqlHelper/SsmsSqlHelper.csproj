@@ -64,6 +64,7 @@
     <Compile Include="Editor\ColumnCompletionSource.cs" />
     <Compile Include="Editor\ConnectionBannerMargin.cs" />
     <Compile Include="Editor\BracketColorTagger.cs" />
+      <Compile Include="Editor\ActiveBracketTagger.cs" />
     <Compile Include="Editor\ActiveEditor.cs" />
     <Compile Include="Editor\JoinConditionCompletionSource.cs" />
     <Compile Include="Editor\KeywordCommitManager.cs" />

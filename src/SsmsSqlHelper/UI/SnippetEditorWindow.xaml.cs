@@ -31,6 +31,8 @@ namespace SsmsSqlHelper.UI
             HintsCheck.IsChecked = settings.ShowSnippetHints;
             ColumnsCheck.IsChecked = settings.ShowColumnHints;
             KeywordsCheck.IsChecked = settings.ShowKeywordHints;
+            ActiveBracketCheck.IsChecked = settings.HighlightActiveBracket;
+            BracketColorsCheck.IsChecked = settings.ColorBracketPairs;
             AliasCheck.IsChecked = settings.AutoAlias;
             WarnCheck.IsChecked = settings.WarnMissingWhere;
             BackupCheck.IsChecked = settings.BackupUnsavedTabs;
@@ -198,6 +200,8 @@ namespace SsmsSqlHelper.UI
                     ShowSnippetHints = HintsCheck.IsChecked == true,
                     ShowColumnHints = ColumnsCheck.IsChecked == true,
                     ShowKeywordHints = KeywordsCheck.IsChecked == true,
+                    HighlightActiveBracket = ActiveBracketCheck.IsChecked == true,
+                    ColorBracketPairs = BracketColorsCheck.IsChecked == true,
                     AutoAlias = AliasCheck.IsChecked == true,
                     WarnMissingWhere = WarnCheck.IsChecked == true,
                     BackupUnsavedTabs = BackupCheck.IsChecked == true,

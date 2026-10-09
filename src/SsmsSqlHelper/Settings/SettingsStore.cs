@@ -18,6 +18,8 @@ namespace SsmsSqlHelper.Settings
         private UserSettings _current = new UserSettings();
         private DateTime _loadedWriteTime;
 
+        public event EventHandler Changed;
+
         public UserSettings Current
         {
             get
@@ -39,6 +41,7 @@ namespace SsmsSqlHelper.Settings
                 _current = settings;
                 _loadedWriteTime = File.GetLastWriteTimeUtc(FilePath);
             }
+            Changed?.Invoke(this, EventArgs.Empty);
         }
 
         private void ReloadIfChanged()

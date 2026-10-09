@@ -44,5 +44,46 @@ namespace SsmsSqlHelper.Tests
             Assert.AreEqual(0, BracketColorizer.Find("SELECT [x]]").Count);
             Assert.AreEqual(0, BracketColorizer.Find("SELECT )").Count);
         }
+
+        [TestMethod]
+        public void CaretOnEitherSideOfNestedPairFindsTheSameBrackets()
+        {
+            const string sql = "SELECT COALESCE(ISNULL([Amount], 0), GETDATE())";
+            var pairs = BracketColorizer.IndexPairs(sql);
+            var open = sql.IndexOf("ISNULL(") + "ISNULL".Length;
+            var close = sql.IndexOf(", 0)") + 3;
+
+            Assert.IsTrue(BracketColorizer.TryGetPairAtCaret(pairs, open, out var onOpen));
+            Assert.IsTrue(BracketColorizer.TryGetPairAtCaret(pairs, open + 1, out var afterOpen));
+            Assert.IsTrue(BracketColorizer.TryGetPairAtCaret(pairs, close, out var onClose));
+            Assert.IsTrue(BracketColorizer.TryGetPairAtCaret(pairs, close + 1, out var afterClose));
+            Assert.AreEqual(open, onOpen.Open);
+            Assert.AreEqual(close, onOpen.Close);
+            Assert.AreEqual(open + 1, afterOpen.Open); // The '[' under the caret takes priority.
+            Assert.AreEqual(onOpen.Open, onClose.Open);
+            Assert.AreEqual(onOpen.Open, afterClose.Open);
+        }
+
+        [TestMethod]
+        public void CaretIgnoresBracketsInStringsCommentsAndUnmatchedText()
+        {
+            const string sql = "SELECT '(' /* ) */ WHERE x = (1)";
+            var pairs = BracketColorizer.IndexPairs(sql);
+            Assert.IsFalse(BracketColorizer.TryGetPairAtCaret(pairs, sql.IndexOf("'('") + 1, out _));
+            Assert.IsFalse(BracketColorizer.TryGetPairAtCaret(pairs, sql.IndexOf("/* )") + 3, out _));
+            Assert.IsTrue(BracketColorizer.TryGetPairAtCaret(pairs, sql.IndexOf("(1)"), out _));
+            Assert.IsFalse(BracketColorizer.TryGetPairAtCaret(BracketColorizer.IndexPairs("SELECT (x"), 7, out _));
+        }
+
+        [TestMethod]
+        public void BracketedIdentifierMatchesOnlyItsOuterDelimiters()
+        {
+            const string sql = "SELECT [a]]b]";
+            var pairs = BracketColorizer.IndexPairs(sql);
+            Assert.IsTrue(BracketColorizer.TryGetPairAtCaret(pairs, 7, out var pair));
+            Assert.AreEqual(7, pair.Open);
+            Assert.AreEqual(sql.Length - 1, pair.Close);
+            Assert.IsFalse(BracketColorizer.TryGetPairAtCaret(pairs, sql.IndexOf("]]"), out _));
+        }
     }
 }

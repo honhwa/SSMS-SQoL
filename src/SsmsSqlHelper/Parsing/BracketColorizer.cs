@@ -15,14 +15,40 @@ namespace SsmsSqlHelper.Parsing
         public int Level { get; }
     }
 
+    internal readonly struct BracketPair
+    {
+        public BracketPair(int open, int close, int level)
+        {
+            Open = open;
+            Close = close;
+            Level = level;
+        }
+
+        public int Open { get; }
+        public int Close { get; }
+        public int Level { get; }
+    }
+
     /// <summary>Finds matched SQL delimiters without treating strings or comments as code.</summary>
     internal static class BracketColorizer
     {
         public static IReadOnlyList<BracketColorSpan> Find(string sql)
         {
+            var result = new List<BracketColorSpan>();
+            foreach (var pair in FindPairs(sql))
+            {
+                result.Add(new BracketColorSpan(pair.Open, pair.Level));
+                result.Add(new BracketColorSpan(pair.Close, pair.Level));
+            }
+            result.Sort((a, b) => a.Start.CompareTo(b.Start));
+            return result;
+        }
+
+        public static IReadOnlyList<BracketPair> FindPairs(string sql)
+        {
             if (sql == null) throw new ArgumentNullException(nameof(sql));
 
-            var result = new List<BracketColorSpan>();
+            var result = new List<BracketPair>();
             var open = new Stack<(char Kind, int Start, int Level)>();
             foreach (var token in SqlTokenizer.Tokenize(sql))
             {
@@ -30,8 +56,7 @@ namespace SsmsSqlHelper.Parsing
                     token.Text[0] == '[' && HasClosingSquareBracket(token.Text))
                 {
                     // [name] is one SQL identifier. Escaped ]] inside it are not delimiters.
-                    result.Add(new BracketColorSpan(token.Start, open.Count));
-                    result.Add(new BracketColorSpan(token.End - 1, open.Count));
+                    result.Add(new BracketPair(token.Start, token.End - 1, open.Count));
                 }
                 else if (token.Kind == TokenKind.Symbol && token.Text.Length == 1)
                 {
@@ -42,14 +67,34 @@ namespace SsmsSqlHelper.Parsing
                              open.Peek().Kind == (c == ')' ? '(' : '{'))
                     {
                         var pair = open.Pop();
-                        result.Add(new BracketColorSpan(pair.Start, pair.Level));
-                        result.Add(new BracketColorSpan(token.Start, pair.Level));
+                        result.Add(new BracketPair(pair.Start, token.Start, pair.Level));
                     }
                 }
             }
 
-            result.Sort((a, b) => a.Start.CompareTo(b.Start));
             return result;
+        }
+
+        public static IReadOnlyDictionary<int, BracketPair> IndexPairs(string sql)
+        {
+            var index = new Dictionary<int, BracketPair>();
+            foreach (var pair in FindPairs(sql))
+            {
+                index[pair.Open] = pair;
+                index[pair.Close] = pair;
+            }
+            return index;
+        }
+
+        public static bool TryGetPairAtCaret(IReadOnlyDictionary<int, BracketPair> index, int caret, out BracketPair pair)
+        {
+            // Prefer the character under the caret; otherwise use the one immediately before it.
+            if (index.TryGetValue(caret, out pair))
+                return true;
+            if (caret > 0 && index.TryGetValue(caret - 1, out pair))
+                return true;
+            pair = default;
+            return false;
         }
 
         private static bool HasClosingSquareBracket(string text)

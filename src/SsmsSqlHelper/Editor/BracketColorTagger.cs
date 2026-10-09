@@ -4,9 +4,11 @@ using System.ComponentModel.Composition;
 using System.Windows.Media;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Classification;
+using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Tagging;
 using Microsoft.VisualStudio.Utilities;
 using SsmsSqlHelper.Parsing;
+using SsmsSqlHelper.Settings;
 
 namespace SsmsSqlHelper.Editor
 {
@@ -86,28 +88,34 @@ namespace SsmsSqlHelper.Editor
     [UserVisible(true)]
     internal sealed class BracketFormatSix : BracketFormat { public BracketFormatSix() : base(75, 125, 215) { } }
 
-    [Export(typeof(ITaggerProvider))]
+    [Export(typeof(IViewTaggerProvider))]
     [ContentType("SQL")]
     [TagType(typeof(ClassificationTag))]
-    internal sealed class BracketColorTaggerProvider : ITaggerProvider
+    internal sealed class BracketColorTaggerProvider : IViewTaggerProvider
     {
         [Import]
         internal IClassificationTypeRegistryService Registry = null;
 
-        public ITagger<T> CreateTagger<T>(ITextBuffer buffer) where T : ITag =>
-            buffer.Properties.GetOrCreateSingletonProperty(() => new BracketColorTagger(buffer, Registry)) as ITagger<T>;
+        public ITagger<T> CreateTagger<T>(ITextView view, ITextBuffer buffer) where T : ITag
+        {
+            if (view.TextBuffer != buffer)
+                return null;
+            return view.Properties.GetOrCreateSingletonProperty(() => new BracketColorTagger(view, buffer, Registry)) as ITagger<T>;
+        }
     }
 
     internal sealed class BracketColorTagger : ITagger<ClassificationTag>
     {
+        private readonly ITextView _view;
         private readonly ITextBuffer _buffer;
         private readonly ClassificationTag[] _tags;
         private readonly object _cacheLock = new object();
         private ITextSnapshot _cachedSnapshot;
         private IReadOnlyList<BracketColorSpan> _cachedBrackets;
 
-        public BracketColorTagger(ITextBuffer buffer, IClassificationTypeRegistryService registry)
+        public BracketColorTagger(ITextView view, ITextBuffer buffer, IClassificationTypeRegistryService registry)
         {
+            _view = view;
             _buffer = buffer;
             var names = new[] { BracketColorNames.One, BracketColorNames.Two, BracketColorNames.Three,
                 BracketColorNames.Four, BracketColorNames.Five, BracketColorNames.Six };
@@ -115,6 +123,8 @@ namespace SsmsSqlHelper.Editor
             for (var i = 0; i < names.Length; i++)
                 _tags[i] = new ClassificationTag(registry.GetClassificationType(names[i]));
             _buffer.Changed += OnBufferChanged;
+            _view.Closed += OnClosed;
+            SettingsStore.Instance.Changed += OnSettingsChanged;
         }
 
         public event EventHandler<SnapshotSpanEventArgs> TagsChanged;
@@ -129,9 +139,22 @@ namespace SsmsSqlHelper.Editor
             TagsChanged?.Invoke(this, new SnapshotSpanEventArgs(new SnapshotSpan(e.After, 0, e.After.Length)));
         }
 
+        private void OnSettingsChanged(object sender, EventArgs e)
+        {
+            var snapshot = _buffer.CurrentSnapshot;
+            TagsChanged?.Invoke(this, new SnapshotSpanEventArgs(new SnapshotSpan(snapshot, 0, snapshot.Length)));
+        }
+
+        private void OnClosed(object sender, EventArgs e)
+        {
+            _buffer.Changed -= OnBufferChanged;
+            _view.Closed -= OnClosed;
+            SettingsStore.Instance.Changed -= OnSettingsChanged;
+        }
+
         public IEnumerable<ITagSpan<ClassificationTag>> GetTags(NormalizedSnapshotSpanCollection spans)
         {
-            if (spans.Count == 0) yield break;
+            if (spans.Count == 0 || !SettingsStore.Instance.Current.ColorBracketPairs) yield break;
             var snapshot = spans[0].Snapshot;
             IReadOnlyList<BracketColorSpan> brackets;
             lock (_cacheLock)

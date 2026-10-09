@@ -113,6 +113,8 @@ namespace SsmsSqlHelper.Tests
                 Assert.IsTrue(settings.ShowSnippetHints);
                 Assert.IsTrue(settings.ShowColumnHints);
                 Assert.IsTrue(settings.ShowKeywordHints);
+                Assert.IsTrue(settings.HighlightActiveBracket);
+                Assert.IsTrue(settings.ColorBracketPairs);
                 Assert.IsTrue(settings.AutoAlias);
                 Assert.IsTrue(settings.WarnMissingWhere);
             }
@@ -125,17 +127,21 @@ namespace SsmsSqlHelper.Tests
             Assert.IsFalse(settings.ShowSnippetHints);
             Assert.IsTrue(settings.AutoAlias);
             Assert.IsTrue(settings.WarnMissingWhere);
+            Assert.IsTrue(settings.HighlightActiveBracket);
+            Assert.IsTrue(settings.ColorBracketPairs);
         }
 
         [TestMethod]
         public void SettingsRoundTrip()
         {
-            var original = new UserSettings { ShowSnippetHints = false, ShowColumnHints = true, ShowKeywordHints = false, AutoAlias = false, WarnMissingWhere = true };
+            var original = new UserSettings { ShowSnippetHints = false, ShowColumnHints = true, ShowKeywordHints = false, HighlightActiveBracket = true, ColorBracketPairs = false, AutoAlias = false, WarnMissingWhere = true };
             var back = UserSettings.Parse(original.ToJson());
 
             Assert.IsFalse(back.ShowSnippetHints);
             Assert.IsTrue(back.ShowColumnHints);
             Assert.IsFalse(back.ShowKeywordHints);
+            Assert.IsTrue(back.HighlightActiveBracket);
+            Assert.IsFalse(back.ColorBracketPairs);
             Assert.IsFalse(back.AutoAlias);
             Assert.IsTrue(back.WarnMissingWhere);
         }

@@ -27,6 +27,14 @@ namespace SsmsSqlHelper.Settings
         [DataMember(Name = "showKeywordHints")]
         public bool ShowKeywordHints { get; set; }
 
+        /// <summary>Outline the matched bracket pair at the caret in red.</summary>
+        [DataMember(Name = "highlightActiveBracket")]
+        public bool HighlightActiveBracket { get; set; }
+
+        /// <summary>Color matched bracket pairs according to their nesting level.</summary>
+        [DataMember(Name = "colorBracketPairs")]
+        public bool ColorBracketPairs { get; set; }
+
         /// <summary>Add an alias (and a join condition after JOIN) when a table is picked or Tab is pressed after its name.</summary>
         [DataMember(Name = "autoAlias")]
         public bool AutoAlias { get; set; }
@@ -54,6 +62,8 @@ namespace SsmsSqlHelper.Settings
             ShowSnippetHints = true;
             ShowColumnHints = true;
             ShowKeywordHints = true;
+            HighlightActiveBracket = true;
+            ColorBracketPairs = true;
             AutoAlias = true;
             WarnMissingWhere = true;
             BackupUnsavedTabs = true;
@@ -75,6 +85,8 @@ namespace SsmsSqlHelper.Settings
                    "  \"showSnippetHints\": " + Flag(ShowSnippetHints) + "," + nl +
                    "  \"showColumnHints\": " + Flag(ShowColumnHints) + "," + nl +
                    "  \"showKeywordHints\": " + Flag(ShowKeywordHints) + "," + nl +
+                   "  \"highlightActiveBracket\": " + Flag(HighlightActiveBracket) + "," + nl +
+                   "  \"colorBracketPairs\": " + Flag(ColorBracketPairs) + "," + nl +
                    "  \"autoAlias\": " + Flag(AutoAlias) + "," + nl +
                    "  \"warnMissingWhere\": " + Flag(WarnMissingWhere) + "," + nl +
                    "  \"backupUnsavedTabs\": " + Flag(BackupUnsavedTabs) + "," + nl +
