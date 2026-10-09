@@ -1,4 +1,4 @@
-<img width="1774" height="887" alt="ssms-sqol-logo" src="https://github.com/user-attachments/assets/19c5b612-62b6-474c-bc02-b4f8cb55f343" />
+<img width="1574" height="687" alt="ssms-sqol-logo" src="https://github.com/user-attachments/assets/19c5b612-62b6-474c-bc02-b4f8cb55f343" />
 
 # SQL Helper for SSMS 22
 
