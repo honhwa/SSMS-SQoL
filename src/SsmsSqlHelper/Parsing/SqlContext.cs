@@ -147,6 +147,14 @@ namespace SsmsSqlHelper.Parsing
             return true;
         }
 
+        /// <summary>Functions returning tables are valid after FROM or JOIN, but not INSERT INTO or UPDATE.</summary>
+        public static bool IsTableFunctionSource(string text, int nameStart)
+        {
+            var sig = Significant(SqlTokenizer.Tokenize(text));
+            var prev = LastIndexBefore(sig, nameStart);
+            return prev >= 0 && (sig[prev].IsKeyword("FROM") || sig[prev].IsKeyword("JOIN"));
+        }
+
         /// <summary>Span of a procedure name being typed immediately after EXEC or EXECUTE.</summary>
         public static bool TryGetProcedureNameSpan(string text, int caret, out int start, out int end)
         {

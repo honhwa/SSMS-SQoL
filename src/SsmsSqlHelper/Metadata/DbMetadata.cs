@@ -17,7 +17,7 @@ namespace SsmsSqlHelper.Metadata
 
         public DbMetadata(string server, string database, IReadOnlyList<TableInfo> tables, DateTime loadedAt, TimeSpan loadDuration,
             IReadOnlyList<ForeignKeyInfo> foreignKeys = null, string schemaStamp = null,
-            IReadOnlyList<ProcedureInfo> procedures = null)
+            IReadOnlyList<ProcedureInfo> procedures = null, IReadOnlyList<TableFunctionInfo> tableFunctions = null)
         {
             SchemaStamp = schemaStamp;
             Server = server;
@@ -27,6 +27,7 @@ namespace SsmsSqlHelper.Metadata
             LoadDuration = loadDuration;
             ForeignKeys = foreignKeys ?? NoForeignKeys;
             Procedures = procedures ?? new ProcedureInfo[0];
+            TableFunctions = tableFunctions ?? new TableFunctionInfo[0];
             _byQualifiedName = tables.ToDictionary(t => Key(t.Schema, t.Name), StringComparer.OrdinalIgnoreCase);
             _byName = tables.ToLookup(t => t.Name, StringComparer.OrdinalIgnoreCase);
             _fkByParent = ForeignKeys.ToLookup(f => f.Parent);
@@ -39,6 +40,7 @@ namespace SsmsSqlHelper.Metadata
         public IReadOnlyList<TableInfo> Tables { get; }
         public IReadOnlyList<ForeignKeyInfo> ForeignKeys { get; }
         public IReadOnlyList<ProcedureInfo> Procedures { get; }
+        public IReadOnlyList<TableFunctionInfo> TableFunctions { get; }
         /// <summary>Fingerprint of the schema when this snapshot was read (see <see cref="MetadataLoader.ReadStampAsync"/>); null if unknown.</summary>
         public string SchemaStamp { get; }
         public DateTime LoadedAt { get; }

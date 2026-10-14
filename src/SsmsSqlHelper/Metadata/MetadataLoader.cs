@@ -56,11 +56,25 @@ LEFT JOIN sys.schemas ts ON ts.schema_id = t.schema_id
 WHERE p.is_ms_shipped = 0
 ORDER BY s.name, p.name, prm.parameter_id;";
 
+        private const string TableFunctionQuery = @"
+SELECT f.object_id, s.name, f.name, f.type,
+       CONVERT(nvarchar(4000), ep.value), prm.name, ts.name, t.name,
+       prm.max_length, prm.precision, prm.scale
+FROM sys.objects f
+JOIN sys.schemas s ON s.schema_id = f.schema_id
+LEFT JOIN sys.extended_properties ep ON ep.class = 1 AND ep.major_id = f.object_id
+    AND ep.minor_id = 0 AND ep.name = N'MS_Description'
+LEFT JOIN sys.parameters prm ON prm.object_id = f.object_id AND prm.parameter_id > 0
+LEFT JOIN sys.types t ON t.user_type_id = prm.user_type_id
+LEFT JOIN sys.schemas ts ON ts.schema_id = t.schema_id
+WHERE f.type IN ('IF', 'TF', 'FT') AND f.is_ms_shipped = 0
+ORDER BY s.name, f.name, prm.parameter_id;";
+
         // Changes whenever a table, view, procedure, key or foreign key is created, altered or dropped
         private const string StampQuery = @"
 SELECT CAST(COUNT(*) AS varchar(20)) + '|' +
        ISNULL(CONVERT(varchar(20), CHECKSUM_AGG(BINARY_CHECKSUM(object_id, modify_date))), '')
-FROM sys.objects WHERE type IN ('U', 'V', 'P', 'PC', 'F', 'PK') AND is_ms_shipped = 0;";
+FROM sys.objects WHERE type IN ('U', 'V', 'P', 'PC', 'F', 'IF', 'TF', 'FT', 'PK') AND is_ms_shipped = 0;";
 
         /// <summary>A cheap fingerprint of the schema: compare with <see cref="DbMetadata.SchemaStamp"/> to see if a reload is needed.</summary>
         public static async Task<string> ReadStampAsync(ActiveConnection connection, CancellationToken cancellationToken)
@@ -84,6 +98,7 @@ FROM sys.objects WHERE type IN ('U', 'V', 'P', 'PC', 'F', 'PK') AND is_ms_shippe
             var tables = new List<TableInfo>();
             List<ForeignKeyInfo> foreignKeys = null;
             List<ProcedureInfo> procedures = null;
+            List<TableFunctionInfo> tableFunctions = null;
             string stamp;
 
             using (var sql = connection.CreateSqlConnection())
@@ -142,9 +157,52 @@ FROM sys.objects WHERE type IN ('U', 'V', 'P', 'PC', 'F', 'PK') AND is_ms_shippe
                 {
                     Log.Error("Could not read procedures; EXEC expansion will be unavailable", ex);
                 }
+
+                try
+                {
+                    tableFunctions = await LoadTableFunctionsAsync(sql, cancellationToken).ConfigureAwait(false);
+                }
+                catch (SqlException ex)
+                {
+                    Log.Error("Could not read table-valued functions; FROM suggestions will omit them", ex);
+                }
             }
 
-            return new DbMetadata(connection.Server, connection.Database, tables, DateTime.Now, stopwatch.Elapsed, foreignKeys, stamp, procedures);
+            return new DbMetadata(connection.Server, connection.Database, tables, DateTime.Now, stopwatch.Elapsed, foreignKeys, stamp, procedures, tableFunctions);
+        }
+
+        private static async Task<List<TableFunctionInfo>> LoadTableFunctionsAsync(SqlConnection sql, CancellationToken cancellationToken)
+        {
+            var result = new List<TableFunctionInfo>();
+            using (var cmd = new SqlCommand(TableFunctionQuery, sql) { CommandTimeout = 60 })
+            using (var reader = await cmd.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false))
+            {
+                var currentId = -1;
+                TableFunctionInfo current = null;
+                while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
+                {
+                    var id = reader.GetInt32(0);
+                    if (id != currentId)
+                    {
+                        currentId = id;
+                        current = new TableFunctionInfo(reader.GetString(1), reader.GetString(2), reader.GetString(3).Trim(),
+                            reader.IsDBNull(4) ? null : reader.GetString(4));
+                        result.Add(current);
+                    }
+
+                    if (!reader.IsDBNull(5))
+                        current.Parameters.Add(new ProcedureParameterInfo
+                        {
+                            Name = reader.GetString(5),
+                            TypeSchema = reader.GetString(6),
+                            TypeName = reader.GetString(7),
+                            MaxLength = reader.GetInt16(8),
+                            Precision = reader.GetByte(9),
+                            Scale = reader.GetByte(10),
+                        });
+                }
+            }
+            return result;
         }
 
         private static async Task<List<ProcedureInfo>> LoadProceduresAsync(SqlConnection sql, CancellationToken cancellationToken)

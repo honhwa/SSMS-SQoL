@@ -14,10 +14,10 @@ namespace SsmsSqlHelper.Updates
         public const string ApiUrl = "https://api.github.com/repos/jirakitc/SSMS-SQoL/releases?per_page=30";
 
         private static readonly Regex InstallerName = new Regex(
-            @"^SsmsSqlHelper-(?<version>\d+\.\d+\.\d+(?:\.\d+)?)(?:-[0-9A-Za-z.-]+)?\.(?:zip|vsix)$",
+            @"^SsmsSqlHelper-(?<version>\d+\.\d+\.\d+(?:\.\d+)?)(?<suffix>-[0-9A-Za-z.-]+)?\.(?:zip|vsix)$",
             RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
 
-        public static Version LatestInstallerVersion(string json)
+        public static Version LatestInstallerVersion(string json, bool includePrerelease = true)
         {
             if (string.IsNullOrWhiteSpace(json))
                 throw new ArgumentException("GitHub returned an empty response.", nameof(json));
@@ -28,12 +28,15 @@ namespace SsmsSqlHelper.Updates
                 Version latest = null;
                 foreach (var release in releases ?? Array.Empty<GitHubRelease>())
                 {
-                    if (release == null || release.Draft)
+                    if (release == null || release.Draft || (!includePrerelease && release.Prerelease))
                         continue;
 
-                    var installerVersions = (release.Assets ?? Array.Empty<GitHubAsset>())
+                    var installerMatches = (release.Assets ?? Array.Empty<GitHubAsset>())
                         .Select(asset => asset == null ? null : InstallerName.Match(asset.Name ?? ""))
                         .Where(match => match != null && match.Success)
+                        .ToArray();
+                    var installerVersions = installerMatches
+                        .Where(match => includePrerelease || !match.Groups["suffix"].Success)
                         .Select(match => ParseVersion(match.Groups["version"].Value))
                         .Where(version => version != null)
                         .ToArray();
@@ -42,7 +45,7 @@ namespace SsmsSqlHelper.Updates
                     // a tag that differs from the VSIX inside the ZIP.
                     var version = installerVersions.Length > 0
                         ? installerVersions.Max()
-                        : ParseTag(release.TagName);
+                        : installerMatches.Length > 0 ? null : ParseTag(release.TagName, includePrerelease);
 
                     if (version != null && (latest == null || version.CompareTo(latest) > 0))
                         latest = version;
@@ -51,12 +54,14 @@ namespace SsmsSqlHelper.Updates
             }
         }
 
-        private static Version ParseTag(string tag)
+        private static Version ParseTag(string tag, bool includePrerelease)
         {
             if (string.IsNullOrWhiteSpace(tag))
                 return null;
             var value = tag.Trim().TrimStart('v', 'V');
             var suffix = value.IndexOfAny(new[] { '-', '+' });
+            if (!includePrerelease && value.Contains("-"))
+                return null;
             if (suffix >= 0)
                 value = value.Substring(0, suffix);
             return ParseVersion(value);
@@ -76,6 +81,9 @@ namespace SsmsSqlHelper.Updates
 
             [DataMember(Name = "draft")]
             public bool Draft { get; set; }
+
+            [DataMember(Name = "prerelease")]
+            public bool Prerelease { get; set; }
 
             [DataMember(Name = "assets")]
             public GitHubAsset[] Assets { get; set; }

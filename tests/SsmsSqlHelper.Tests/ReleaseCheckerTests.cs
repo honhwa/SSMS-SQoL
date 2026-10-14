@@ -23,6 +23,17 @@ namespace SsmsSqlHelper.Tests
         }
 
         [TestMethod]
+        public void StableBuildSkipsBetaEvenWhenItsNumberIsHigher()
+        {
+            const string json = "[{\"tag_name\":\"v2.0.0-beta\",\"draft\":false,\"prerelease\":true," +
+                                "\"assets\":[{\"name\":\"SsmsSqlHelper-2.0.0-beta.zip\"}]}," +
+                                "{\"tag_name\":\"v1.0.0\",\"draft\":false,\"prerelease\":false," +
+                                "\"assets\":[{\"name\":\"SsmsSqlHelper-1.0.0.zip\"}]}]";
+            Assert.AreEqual("1.0.0", ReleaseChecker.LatestInstallerVersion(json, includePrerelease: false).ToString());
+            Assert.AreEqual("2.0.0", ReleaseChecker.LatestInstallerVersion(json, includePrerelease: true).ToString());
+        }
+
+        [TestMethod]
         public void PicksHighestPublishedInstallerAndIgnoresDrafts()
         {
             const string json = "[{\"tag_name\":\"v0.2.0\",\"draft\":false," +
