@@ -90,6 +90,7 @@
     <Compile Include="Metadata\DbMetadata.cs" />
     <Compile Include="Metadata\ForeignKeyInfo.cs" />
     <Compile Include="Metadata\ProcedureInfo.cs" />
+    <Compile Include="Metadata\TableFunctionInfo.cs" />
     <Compile Include="Metadata\SchemaObjectInfo.cs" />
     <Compile Include="Metadata\MetadataLoader.cs" />
     <Compile Include="Metadata\DatabaseNameService.cs" />

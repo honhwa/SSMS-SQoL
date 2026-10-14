@@ -29,18 +29,22 @@ namespace SsmsSqlHelper.Editor
             textView.Properties.GetOrCreateSingletonProperty(() => new TableCompletionSource());
     }
 
-    /// <summary>Offers tables and views wherever a table name belongs (FROM, JOIN, INTO, UPDATE, ...).</summary>
+    /// <summary>Offers tables and views wherever a table name belongs, and table-valued functions after FROM/JOIN.</summary>
     internal sealed class TableCompletionSource : IAsyncCompletionSource
     {
         /// <summary>Key of the <see cref="TableInfo"/> stored on each item, read by <see cref="TableCommitManager"/>.</summary>
         internal static readonly object TableKey = typeof(TableInfo);
+        internal static readonly object FunctionKey = typeof(TableFunctionInfo);
 
         private static readonly ImageElement TableIcon = Icon(KnownMonikers.Table, "Table");
         private static readonly ImageElement ViewIcon = Icon(KnownMonikers.View, "View");
+        private static readonly ImageElement FunctionIcon = Icon(KnownMonikers.Method, "Table-valued function");
 
         private DbMetadata _metadata;
         private DbMetadata _itemsMetadata;
         private ImmutableArray<CompletionItem> _items;
+        private bool _offerFunctions;
+        private bool _itemsOfferFunctions;
         private Dictionary<TableInfo, string> _related;
 
         public CompletionStartData InitializeCompletion(CompletionTrigger trigger, SnapshotPoint triggerLocation, CancellationToken token)
@@ -54,7 +58,8 @@ namespace SsmsSqlHelper.Editor
                 return CompletionStartData.DoesNotParticipateInCompletion;
 
             _metadata = EditorContext.GetMetadata();
-            if (_metadata == null || _metadata.Tables.Count == 0)
+            _offerFunctions = SqlContext.IsTableFunctionSource(window.Text, start);
+            if (_metadata == null || (_metadata.Tables.Count == 0 && (!_offerFunctions || _metadata.TableFunctions.Count == 0)))
                 return CompletionStartData.DoesNotParticipateInCompletion;
 
             _related = FindRelatedTables(_metadata, window.Text, start);
@@ -71,10 +76,13 @@ namespace SsmsSqlHelper.Editor
                 return Task.FromResult(CompletionContext.Empty);
 
             // Building thousands of items per keystroke is wasteful; reuse them while the metadata is unchanged
-            if (!ReferenceEquals(metadata, _itemsMetadata))
+            if (!ReferenceEquals(metadata, _itemsMetadata) || _itemsOfferFunctions != _offerFunctions)
             {
-                _items = metadata.Tables.Select(CreateItem).ToImmutableArray();
+                _items = metadata.Tables.Select(CreateItem)
+                    .Concat(_offerFunctions ? metadata.TableFunctions.Select(CreateFunctionItem) : Enumerable.Empty<CompletionItem>())
+                    .ToImmutableArray();
                 _itemsMetadata = metadata;
+                _itemsOfferFunctions = _offerFunctions;
             }
 
             var items = _items;
@@ -121,6 +129,15 @@ namespace SsmsSqlHelper.Editor
 
         public Task<object> GetDescriptionAsync(IAsyncCompletionSession session, CompletionItem item, CancellationToken token)
         {
+            if (item.Properties.TryGetProperty(FunctionKey, out TableFunctionInfo function))
+            {
+                var details = new StringBuilder().Append(function.Signature).AppendLine()
+                    .Append(function.Kind).Append(" · returns table");
+                if (!string.IsNullOrWhiteSpace(function.Description))
+                    details.AppendLine().Append(function.Description.Trim());
+                return Task.FromResult<object>(details.ToString());
+            }
+
             if (!item.Properties.TryGetProperty(TableKey, out TableInfo table))
                 return Task.FromResult<object>(null);
 
@@ -134,6 +151,28 @@ namespace SsmsSqlHelper.Editor
         }
 
         private CompletionItem CreateItem(TableInfo table) => CreateItem(table, "", table.Schema);
+
+        private CompletionItem CreateFunctionItem(TableFunctionInfo function)
+        {
+            var summary = function.Kind;
+            if (!string.IsNullOrWhiteSpace(function.Description))
+            {
+                var firstLine = function.Description.Trim().Split(new[] { '\r', '\n' })[0];
+                summary += " · " + (firstLine.Length > 80 ? firstLine.Substring(0, 80) + "…" : firstLine);
+            }
+            var item = new CompletionItem(
+                displayText: function.Name + "()",
+                source: this,
+                icon: FunctionIcon,
+                filters: ImmutableArray<CompletionFilter>.Empty,
+                suffix: summary,
+                insertText: function.QualifiedName + "()",
+                sortText: function.Name,
+                filterText: function.Schema + "." + function.Name,
+                attributeIcons: ImmutableArray<ImageElement>.Empty);
+            item.Properties.AddProperty(FunctionKey, function);
+            return item;
+        }
 
         private CompletionItem CreateItem(TableInfo table, string sortPrefix, string suffix)
         {

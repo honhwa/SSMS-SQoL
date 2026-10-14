@@ -45,7 +45,7 @@ namespace SsmsSqlHelper.Commands
                 {
                     response.EnsureSuccessStatusCode();
                     var json = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-                    published = ReleaseChecker.LatestInstallerVersion(json);
+                    published = ReleaseChecker.LatestInstallerVersion(json, includePrerelease: installedLabel.Contains("-"));
                 }
             }
             catch (Exception ex)

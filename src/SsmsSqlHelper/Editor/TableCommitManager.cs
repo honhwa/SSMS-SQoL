@@ -49,6 +49,25 @@ namespace SsmsSqlHelper.Editor
 
         public CommitResult TryCommit(IAsyncCompletionSession session, ITextBuffer buffer, CompletionItem item, char typedChar, CancellationToken token)
         {
+            if (item.Properties.TryGetProperty(TableCompletionSource.FunctionKey, out TableFunctionInfo function))
+            {
+                if (!ThreadHelper.CheckAccess())
+                    return CommitResult.Unhandled;
+                try
+                {
+                    var span = session.ApplicableToSpan.GetSpan(buffer.CurrentSnapshot);
+                    var after = buffer.Replace(span.Span, item.InsertText);
+                    var caret = span.Start.Position + item.InsertText.Length - (function.Parameters.Count > 0 ? 1 : 0);
+                    session.TextView.Caret.MoveTo(new SnapshotPoint(after, caret));
+                    return new CommitResult(isHandled: true, CommitBehavior.None);
+                }
+                catch (Exception ex)
+                {
+                    Log.Error("Table-valued function commit failed", ex);
+                    return CommitResult.Unhandled;
+                }
+            }
+
             if (!item.Properties.TryGetProperty(TableCompletionSource.TableKey, out TableInfo table) || !ThreadHelper.CheckAccess())
                 return CommitResult.Unhandled;
             ThreadHelper.ThrowIfNotOnUIThread();
