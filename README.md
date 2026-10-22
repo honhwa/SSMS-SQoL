@@ -6,7 +6,7 @@ SQL Helper is a VSIX extension for **SQL Server Management Studio 22**. It adds 
 
 ## Install
 
-1. Download or build `dist/SsmsSqlHelper-1.0.0.zip` and extract it.
+1. Download or build `dist/SsmsSqlHelper-1.0.1.zip` and extract it.
 2. Close every SSMS window.
 3. Run `Install.cmd` from the extracted folder, then start SSMS.
 
@@ -36,6 +36,8 @@ F12 and Ctrl+F12 also work on a procedure name written alone, without `EXEC`. An
 ### Completion
 
 - Suggests tables after `FROM`, `JOIN`, `INSERT INTO`, and `UPDATE`. After `FROM` or `JOIN`, it also suggests table-valued functions with their parameters and description (when available in SQL Server's `MS_Description`).
+- Ranks matching object names as you type: exact names first, then names starting with your text, then names containing it.
+- Suggests synonyms pointing to tables or views, including their columns. Targets can be in the current database, another database, or a linked server accessible through the current connection. The inserted SQL uses the local synonym name; its tooltip shows the target. Inaccessible or missing targets are skipped. Use **Refresh Metadata** after changing columns in a synonym's target database.
 - Suggests `USE` at the start of a statement and accessible database names after `USE ` (including with **Ctrl+Space**).
 - Suggests columns in `SELECT`, `WHERE`, `ON`, and `ORDER BY`, and after `alias.`.
 - Suggests SQL clauses and operators for the current position. Typing `WHERE `, `AND `, `OR `, or `ON ` switches to condition suggestions such as `EXISTS` without requiring Tab.
@@ -84,7 +86,7 @@ powershell -ExecutionPolicy Bypass -File scripts\build-release.ps1
 
 The Debug VSIX is written to `src\SsmsSqlHelper\bin\Debug\SsmsSqlHelper.vsix`. The release script runs tests, builds the Release VSIX, and creates `dist\SsmsSqlHelper-<version>.zip`.
 
-The VSIX version is in `src/SsmsSqlHelper/source.extension.vsixmanifest`; the installer label comes from `AssemblyInformationalVersion` in `Properties/AssemblyInfo.cs` (currently `1.0.0`). VSIX requires a numeric version, so `AssemblyVersion` and `AssemblyFileVersion` must match it. **Change version numbers only when explicitly requested.**
+The VSIX version is in `src/SsmsSqlHelper/source.extension.vsixmanifest`; the installer label comes from `AssemblyInformationalVersion` in `Properties/AssemblyInfo.cs` (currently `1.0.1`). VSIX requires a numeric version, so `AssemblyVersion` and `AssemblyFileVersion` must match it. **Change version numbers only when explicitly requested.**
 
 | Directory | Responsibility |
 | --- | --- |

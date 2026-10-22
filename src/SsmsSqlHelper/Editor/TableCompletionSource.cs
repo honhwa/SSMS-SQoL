@@ -142,7 +142,9 @@ namespace SsmsSqlHelper.Editor
                 return Task.FromResult<object>(null);
 
             const int maxColumns = 25;
-            var sb = new StringBuilder().Append(table).Append(table.IsView ? " (view)" : " (table)");
+            var sb = new StringBuilder().Append(table).Append(table.IsSynonym ? " (synonym)" : table.IsView ? " (view)" : " (table)");
+            if (table.IsSynonym)
+                sb.AppendLine().Append("Target: ").Append(table.SynonymTarget);
             foreach (var c in table.Columns.Take(maxColumns))
                 sb.AppendLine().Append("  ").Append(c.Name).Append(' ').Append(c.DisplayType).Append(c.IsPrimaryKey ? "  PK" : "");
             if (table.Columns.Count > maxColumns)
@@ -150,7 +152,7 @@ namespace SsmsSqlHelper.Editor
             return Task.FromResult<object>(sb.ToString());
         }
 
-        private CompletionItem CreateItem(TableInfo table) => CreateItem(table, "", table.Schema);
+        private CompletionItem CreateItem(TableInfo table) => CreateItem(table, "", table.Schema + (table.IsSynonym ? " · synonym" : ""));
 
         private CompletionItem CreateFunctionItem(TableFunctionInfo function)
         {

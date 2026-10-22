@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using SsmsSqlHelper.Editor;
 using SsmsSqlHelper.Parsing;
@@ -8,6 +9,35 @@ namespace SsmsSqlHelper.Tests
     [TestClass]
     public class CompletionSortOrderTests
     {
+        [TestMethod]
+        public void ExactObjectNamePrecedesPrefixAndSubstringMatches()
+        {
+            var names = new[] { "AssetWorkers", "ItemCategoryGroupWorkers", "Workers", "WorkersArchive", "WorkerSignatures" };
+            var ranked = names.OrderBy(n => CompletionSortOrder.ObjectMatch(n, "workers")).ToArray();
+            CollectionAssert.AreEqual(new[] { "Workers", "WorkersArchive", "WorkerSignatures", "AssetWorkers", "ItemCategoryGroupWorkers" }, ranked);
+        }
+
+        [DataTestMethod]
+        [DataRow("dbo.workers", "workers")]
+        [DataRow("[dbo].[Workers]", "Workers")]
+        [DataRow("[dbo].[Work", "Work")]
+        [DataRow("dbo.", "")]
+        public void ObjectRankingUsesTheNameAfterTheSchema(string typedName, string expected)
+        {
+            Assert.AreEqual(expected, CompletionSortOrder.ObjectNameWord(typedName));
+        }
+
+        [TestMethod]
+        public void RankingChangesAsTheUserTypesAndKeepsTiesStable()
+        {
+            var names = new[] { "AssetWorkers", "WorkersArchive", "Workers" };
+            CollectionAssert.AreEqual(names, names.OrderBy(n => CompletionSortOrder.ObjectMatch(n, "")).ToArray());
+            CollectionAssert.AreEqual(new[] { "WorkersArchive", "Workers", "AssetWorkers" },
+                names.OrderBy(n => CompletionSortOrder.ObjectMatch(n, "work")).ToArray());
+            CollectionAssert.AreEqual(new[] { "Workers", "WorkersArchive", "AssetWorkers" },
+                names.OrderBy(n => CompletionSortOrder.ObjectMatch(n, "workers")).ToArray());
+        }
+
         [TestMethod]
         public void EmptyWordPutsEveryColumnBeforeKeywordsAndFunctions()
         {

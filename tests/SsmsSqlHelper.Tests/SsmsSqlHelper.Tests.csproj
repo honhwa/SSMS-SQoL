@@ -12,6 +12,7 @@
     <Compile Include="..\..\src\SsmsSqlHelper\Metadata\DbMetadata.cs" Link="Linked\DbMetadata.cs" />
     <Compile Include="..\..\src\SsmsSqlHelper\Metadata\SqlIdentifier.cs" Link="Linked\SqlIdentifier.cs" />
     <Compile Include="..\..\src\SsmsSqlHelper\Metadata\TableInfo.cs" Link="Linked\TableInfo.cs" />
+    <Compile Include="..\..\src\SsmsSqlHelper\Metadata\SynonymInfo.cs" Link="Linked\SynonymInfo.cs" />
     <Compile Include="..\..\src\SsmsSqlHelper\Parsing\SqlTokenizer.cs" Link="Linked\SqlTokenizer.cs" />
     <Compile Include="..\..\src\SsmsSqlHelper\Editor\CompletionSortOrder.cs" Link="Linked\CompletionSortOrder.cs" />
     <Compile Include="..\..\src\SsmsSqlHelper\Parsing\BracketColorizer.cs" Link="Linked\BracketColorizer.cs" />
