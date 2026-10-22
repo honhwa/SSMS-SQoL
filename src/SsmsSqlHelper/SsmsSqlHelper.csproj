@@ -61,6 +61,7 @@
     <Compile Include="Editor\EditorContext.cs" />
     <Compile Include="Editor\CompletionLauncher.cs" />
     <Compile Include="Editor\CompletionSortOrder.cs" />
+    <Compile Include="Editor\ObjectCompletionItemManager.cs" />
     <Compile Include="Editor\ColumnCompletionSource.cs" />
     <Compile Include="Editor\ConnectionBannerMargin.cs" />
     <Compile Include="Editor\BracketColorTagger.cs" />
@@ -93,6 +94,8 @@
     <Compile Include="Metadata\TableFunctionInfo.cs" />
     <Compile Include="Metadata\SchemaObjectInfo.cs" />
     <Compile Include="Metadata\MetadataLoader.cs" />
+    <Compile Include="Metadata\MetadataLoader.Synonyms.cs" />
+    <Compile Include="Metadata\SynonymInfo.cs" />
     <Compile Include="Metadata\DatabaseNameService.cs" />
     <Compile Include="Metadata\MetadataService.cs" />
     <Compile Include="Metadata\SqlIdentifier.cs" />

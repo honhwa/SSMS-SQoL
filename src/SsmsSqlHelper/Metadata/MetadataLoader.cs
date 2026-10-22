@@ -11,7 +11,7 @@ using SsmsSqlHelper.Ssms;
 namespace SsmsSqlHelper.Metadata
 {
     /// <summary>Reads table/view/column metadata over a dedicated connection (never the query window's own).</summary>
-    internal static class MetadataLoader
+    internal static partial class MetadataLoader
     {
         private const string Query = @"
 SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
@@ -19,11 +19,12 @@ SELECT s.name, o.name, o.type, c.column_id, c.name, t.name,
        c.max_length, c.precision, c.scale, c.is_nullable, c.is_identity, c.is_computed,
        CAST(CASE WHEN c.default_object_id <> 0 THEN 1 ELSE 0 END AS bit),
        CAST(CASE WHEN pk.column_id IS NULL THEN 0 ELSE 1 END AS bit),
-       TYPE_NAME(c.system_type_id)
+       COALESCE(bt.name, t.name)
 FROM sys.objects o
 JOIN sys.schemas s ON s.schema_id = o.schema_id
 JOIN sys.columns c ON c.object_id = o.object_id
 JOIN sys.types t ON t.user_type_id = c.user_type_id
+LEFT JOIN sys.types bt ON bt.user_type_id = c.system_type_id
 LEFT JOIN (
     SELECT ic.object_id, ic.column_id
     FROM sys.indexes i
@@ -74,7 +75,7 @@ ORDER BY s.name, f.name, prm.parameter_id;";
         private const string StampQuery = @"
 SELECT CAST(COUNT(*) AS varchar(20)) + '|' +
        ISNULL(CONVERT(varchar(20), CHECKSUM_AGG(BINARY_CHECKSUM(object_id, modify_date))), '')
-FROM sys.objects WHERE type IN ('U', 'V', 'P', 'PC', 'F', 'IF', 'TF', 'FT', 'PK') AND is_ms_shipped = 0;";
+FROM sys.objects WHERE type IN ('U', 'V', 'P', 'PC', 'F', 'IF', 'TF', 'FT', 'PK', 'SN') AND is_ms_shipped = 0;";
 
         /// <summary>A cheap fingerprint of the schema: compare with <see cref="DbMetadata.SchemaStamp"/> to see if a reload is needed.</summary>
         public static async Task<string> ReadStampAsync(ActiveConnection connection, CancellationToken cancellationToken)
@@ -108,36 +109,7 @@ FROM sys.objects WHERE type IN ('U', 'V', 'P', 'PC', 'F', 'IF', 'TF', 'FT', 'PK'
                 // Read before the tables: a change made while loading then shows up as a difference at the next check
                 stamp = await ReadStampAsync(sql, cancellationToken).ConfigureAwait(false);
                 using (var cmd = new SqlCommand(Query, sql) { CommandTimeout = 60 })
-                using (var reader = await cmd.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false))
-                {
-                    TableInfo current = null;
-                    while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
-                    {
-                        var schema = reader.GetString(0);
-                        var name = reader.GetString(1);
-                        if (current == null || current.Name != name || current.Schema != schema)
-                        {
-                            current = new TableInfo(schema, name, reader.GetString(2).Trim() == "V");
-                            tables.Add(current);
-                        }
-
-                        current.Columns.Add(new ColumnInfo
-                        {
-                            Ordinal = reader.GetInt32(3),
-                            Name = reader.GetString(4),
-                            TypeName = reader.GetString(5),
-                            MaxLength = reader.GetInt16(6),
-                            Precision = reader.GetByte(7),
-                            Scale = reader.GetByte(8),
-                            IsNullable = reader.GetBoolean(9),
-                            IsIdentity = reader.GetBoolean(10),
-                            IsComputed = reader.GetBoolean(11),
-                            HasDefault = reader.GetBoolean(12),
-                            IsPrimaryKey = reader.GetBoolean(13),
-                            BaseTypeName = reader.GetValue(14) as string ?? reader.GetString(5),
-                        });
-                    }
-                }
+                    tables.AddRange(await ReadTablesAsync(cmd, cancellationToken).ConfigureAwait(false));
 
                 // Foreign keys only improve join suggestions; never fail the whole load over them
                 try
@@ -166,9 +138,39 @@ FROM sys.objects WHERE type IN ('U', 'V', 'P', 'PC', 'F', 'IF', 'TF', 'FT', 'PK'
                 {
                     Log.Error("Could not read table-valued functions; FROM suggestions will omit them", ex);
                 }
+
+                await LoadSynonymsAsync(sql, tables, cancellationToken).ConfigureAwait(false);
             }
 
             return new DbMetadata(connection.Server, connection.Database, tables, DateTime.Now, stopwatch.Elapsed, foreignKeys, stamp, procedures, tableFunctions);
+        }
+
+        private static async Task<List<TableInfo>> ReadTablesAsync(SqlCommand cmd, CancellationToken cancellationToken)
+        {
+            var tables = new List<TableInfo>();
+            using (var reader = await cmd.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false))
+            {
+                TableInfo current = null;
+                while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
+                {
+                    var schema = reader.GetString(0);
+                    var name = reader.GetString(1);
+                    if (current == null || current.Name != name || current.Schema != schema)
+                    {
+                        current = new TableInfo(schema, name, reader.GetString(2).Trim() == "V");
+                        tables.Add(current);
+                    }
+                    current.Columns.Add(new ColumnInfo
+                    {
+                        Ordinal = reader.GetInt32(3), Name = reader.GetString(4), TypeName = reader.GetString(5),
+                        MaxLength = reader.GetInt16(6), Precision = reader.GetByte(7), Scale = reader.GetByte(8),
+                        IsNullable = reader.GetBoolean(9), IsIdentity = reader.GetBoolean(10), IsComputed = reader.GetBoolean(11),
+                        HasDefault = reader.GetBoolean(12), IsPrimaryKey = reader.GetBoolean(13),
+                        BaseTypeName = reader.GetString(14),
+                    });
+                }
+            }
+            return tables;
         }
 
         private static async Task<List<TableFunctionInfo>> LoadTableFunctionsAsync(SqlConnection sql, CancellationToken cancellationToken)

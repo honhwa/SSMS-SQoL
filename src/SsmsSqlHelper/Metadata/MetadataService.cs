@@ -111,7 +111,7 @@ namespace SsmsSqlHelper.Metadata
                 using (var cts = new CancellationTokenSource(TimeSpan.FromSeconds(90)))
                 {
                     var metadata = await MetadataLoader.LoadAsync(connection, cts.Token).ConfigureAwait(false);
-                    Log.Info($"Loaded metadata for {connection}: {metadata.Tables.Count} tables/views, " +
+                    Log.Info($"Loaded metadata for {connection}: {metadata.Tables.Count} tables/views/synonyms, " +
                              $"{metadata.ForeignKeys.Count} foreign keys, {metadata.ColumnCount} columns in {metadata.LoadDuration.TotalMilliseconds:N0} ms");
                     return metadata;
                 }
